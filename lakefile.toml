@@ -1,0 +1,23 @@
+name = "eulerMaclaurin"
+version = "0.1.0"
+defaultTargets = ["EulerMaclaurin"]
+lintDriver = "batteries/runLinter"
+lintDriverArgs = ["EulerMaclaurin"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+maxSynthPendingDepth = 3
+weak.linter.mathlibStandardSet = true
+weak.linter.style.header = true
+weak.linter.style.longFile = 1500
+warningAsError = true
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.34.1"
+
+[[lean_lib]]
+name = "EulerMaclaurin"
