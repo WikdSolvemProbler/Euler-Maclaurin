@@ -4,6 +4,7 @@ defaultTargets = ["EulerMaclaurin", "EulerMaclaurinTest"]
 lintDriver = "batteries/runLinter"
 lintDriverArgs = [
   "EulerMaclaurin.Bernoulli",
+  "EulerMaclaurin.IteratedDeriv",
   "EulerMaclaurin.Formula",
   "EulerMaclaurin.RemainderBound"
 ]

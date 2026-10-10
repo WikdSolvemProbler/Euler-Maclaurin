@@ -6,7 +6,7 @@ Authors: Peter Shiller
 module
 
 public import EulerMaclaurin.Bernoulli
-public import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
+public import EulerMaclaurin.IteratedDeriv
 public import Mathlib.Data.Nat.Cast.SetInterval
 
 /-!
@@ -35,9 +35,13 @@ $$\sum_{i = a}^{b} f(i) = \int_a^b f(t) \, dt + \frac{f(a) + f(b)}{2}
   + \sum_{j = 0}^{\lfloor p / 2 \rfloor - 1} \frac{B_{2j + 2}}{(2j + 2)!}
     \bigl( f^{(2j + 1)}(b) - f^{(2j + 1)}(a) \bigr)
   + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p(t) f^{(p)}(t) \, dt.$$
-Bounds on the remainder integral are in `EulerMaclaurin.RemainderBound`.
+A bound for the remainder integral is `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le`.
 
 ## Main results
+
+The infix of a name records the type of the end points `a` and `b`: no infix for real end points
+with the floor in `ℤ`, `natFloor` for real end points with the floor in `ℕ`, and `int` and `nat` for
+end points in `ℤ` and in `ℕ`.
 
 * `EulerMaclaurin.sum_Ioc_eq_integral_add`: the formula for real end points and a $C^p$ function,
   with the derivatives written as `iteratedDerivWithin`.
@@ -45,9 +49,9 @@ Bounds on the remainder integral are in `EulerMaclaurin.RemainderBound`.
   `F : ℕ → ℝ → E` of successive derivatives, where `F (k + 1)` is a derivative of `F k` within
   $[a, b]$ for $k < p$ and `F p` is only interval integrable.  Closed forms for the derivatives can
   be used directly, and the $C^p$ version is a corollary.
-* `EulerMaclaurin.sum_Ioc_nat_eq_integral_add` and
-  `EulerMaclaurin.sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt`: the same two statements for
-  $0 \le a$, with the sum over `Finset.Ioc ⌊a⌋₊ ⌊b⌋₊` in `ℕ`.
+* `EulerMaclaurin.sum_Ioc_natFloor_eq_integral_add` and
+  `EulerMaclaurin.sum_Ioc_natFloor_eq_integral_add_of_hasDerivWithinAt`: the same two statements
+  for $0 \le a$, with the sum over `Finset.Ioc ⌊a⌋₊ ⌊b⌋₊` in `ℕ`.
 * `EulerMaclaurin.sum_Ioc_int_eq_integral_add` and
   `EulerMaclaurin.sum_Ioc_int_eq_integral_add_of_hasDerivWithinAt`: the two statements for integer
   end points, in which the periodic Bernoulli function does not occur in the boundary terms.
@@ -66,10 +70,10 @@ the polynomial $B_p(t - c)$ in place of $P_p$ in the remainder.  If $x \le y$ bo
 $[m, m + 1)$ for an integer $m$, then $P_n = B_n(\cdot - m)$ on $[x, y]$, and the identity says
 that the right-hand side of the formula over $[x, y]$ vanishes, in agreement with the empty sum.
 If $x \in [m, m + 1)$ and the right end point is the integer $m + 1$, then $P_n(m + 1) = B_n(0)$
-differs from $B_n(1)$ by $1$ for $n = 1$ and by $0$ otherwise; this produces the single term
-$f(m + 1)$ of the sum.  The general formula follows by induction on the number of integers in
-$(a, b]$: the first integer $m + 1 > a$ is split off, and the rest is the same statement for the
-interval $[m + 1, b]$.
+differs from $B_n(1)$ by $1$ for $n = 1$ and by $0$ otherwise (`bernoulliFun_eval_one`); this
+produces the single term $f(m + 1)$ of the sum.  The general formula follows by induction on the
+number of integers in $(a, b]$: the first integer $m + 1 > a$ is split off, and the rest is the same
+statement for the interval $[m + 1, b]$.
 
 Only one-sided derivatives are required at the end points $a$ and $b$, as in
 `trapezoidal_error_le` in `Mathlib/MeasureTheory/Integral/IntervalIntegral/TrapezoidalRule.lean`.
@@ -166,7 +170,7 @@ private theorem rhs_eq_zero {p : ℕ} {F : ℕ → ℝ → E} {x y : ℝ} (hxy :
 /-- If `x` lies in `[m, m + 1)` and `n = m + 1`, the right-hand side of the Euler-Maclaurin formula
 over `[x, n]` is `F 0 n`, the value at the one integer in `(x, n]`.  The periodic Bernoulli
 function at the integer `n` is `B_k(0)`, which differs from `B_k(1)` by `1` for `k = 1` and by `0`
-otherwise. -/
+otherwise (`bernoulliFun_eval_one`). -/
 private theorem rhs_eq_of_floor_add_one {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E} {x : ℝ} {n : ℤ}
     (hn : ⌊x⌋ + 1 = n)
     (hF : ∀ k < p, ∀ t ∈ Set.Icc x (n : ℝ),
@@ -194,26 +198,30 @@ private theorem rhs_eq_of_floor_add_one {p : ℕ} (hp : p ≠ 0) {F : ℕ → �
     rw [hn']
     ring
   rw [hy1] at h
-  have hb : (bernoulli 1 : ℝ) = -(1 / 2) := by norm_num [bernoulli_one]
-  have hB : bernoulliFun 1 1 = 1 / 2 := by
-    rw [bernoulliFun_one]
-    norm_num
+  have hjump : ∀ k : ℕ, bernoulliFun (k + 1) 1 =
+      (bernoulli (k + 1) : ℝ) + if k = 0 then 1 else 0 := fun k ↦ by
+    rw [bernoulliFun_eval_one, bernoulliFun_eval_zero]
+    simp
+  have hterm : ∀ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+        (bernoulliFun (k + 1) 1 • F k n - bernoulliFun (k + 1) (x - ⌊x⌋) • F k x) =
+      ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+        ((bernoulli (k + 1) : ℝ) • F k n - bernoulliFun (k + 1) (x - ⌊x⌋) • F k x) +
+      if k = 0 then (-1 : ℝ) • F 0 n else 0 := by
+    intro k _
+    rw [hjump k]
+    by_cases hk : k = 0
+    · subst hk
+      simp only [↓reduceIte, zero_add, pow_one, Nat.factorial_one, Nat.cast_one, div_one]
+      module
+    · simp [hk]
   have hdelta : ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
         ((bernoulli (k + 1) : ℝ) • F k n - bernoulliFun (k + 1) (x - ⌊x⌋) • F k x) =
       ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
         (bernoulliFun (k + 1) 1 • F k n - bernoulliFun (k + 1) (x - ⌊x⌋) • F k x) + F 0 n := by
-    obtain ⟨q, rfl⟩ : ∃ q, p = q + 1 := ⟨p - 1, by omega⟩
-    rw [Finset.sum_range_succ', Finset.sum_range_succ']
-    have hrest : ∑ i ∈ Finset.range q, ((-1 : ℝ) ^ (i + 1 + 1) / ((i + 1 + 1)! : ℝ)) •
-          ((bernoulli (i + 1 + 1) : ℝ) • F (i + 1) n -
-            bernoulliFun (i + 1 + 1) (x - ⌊x⌋) • F (i + 1) x) =
-        ∑ i ∈ Finset.range q, ((-1 : ℝ) ^ (i + 1 + 1) / ((i + 1 + 1)! : ℝ)) •
-          (bernoulliFun (i + 1 + 1) 1 • F (i + 1) n -
-            bernoulliFun (i + 1 + 1) (x - ⌊x⌋) • F (i + 1) x) :=
-      Finset.sum_congr rfl fun i _ ↦ by
-        rw [bernoulliFun_endpoints_eq_of_ne_one (by omega), bernoulliFun_eval_zero]
-    simp only [zero_add, Nat.factorial_one, Nat.cast_one, div_one, pow_one, hb, hB]
-    linear_combination (norm := module) hrest
+    have h0 : 0 ∈ Finset.range p := Finset.mem_range.2 (Nat.pos_of_ne_zero hp)
+    rw [Finset.sum_congr rfl hterm, Finset.sum_add_distrib, Finset.sum_ite_eq']
+    simp only [h0, ↓reduceIte]
+    module
   rw [hint]
   simp only [periodizedBernoulli_intCast, periodizedBernoulli_coe_of_mem_Ico_intCast hx]
   linear_combination (norm := module) h + hdelta
@@ -310,21 +318,6 @@ theorem sum_Ioc_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F 
   sum_Ioc_floor_aux hp (⌊b⌋ - ⌊a⌋).toNat a hab
     (Int.toNat_of_nonneg (sub_nonneg.2 (Int.floor_mono hab))).symm hF hFp
 
-omit [CompleteSpace E] in
-/-- The hypotheses of the family version of the formula for a function which is `C^p` on `[a, b]`,
-with the successive derivatives `iteratedDerivWithin k f (Set.Icc a b)`. -/
-private theorem hasDerivWithinAt_iteratedDerivWithin {f : ℝ → E} {p : ℕ} {a b : ℝ} (hab : a < b)
-    (hf : ContDiffOn ℝ p f (Set.Icc a b)) :
-    (∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (iteratedDerivWithin k f (Set.Icc a b))
-      (iteratedDerivWithin (k + 1) f (Set.Icc a b) x) (Set.Icc a b) x) ∧
-    IntervalIntegrable (iteratedDerivWithin p f (Set.Icc a b)) volume a b := by
-  have hU : UniqueDiffOn ℝ (Set.Icc a b) := uniqueDiffOn_Icc hab
-  refine ⟨fun k hk x hx ↦ ?_,
-    (hf.continuousOn_iteratedDerivWithin le_rfl hU).intervalIntegrable_of_Icc hab.le⟩
-  rw [iteratedDerivWithin_succ]
-  exact ((hf.differentiableOn_iteratedDerivWithin (by exact_mod_cast hk) hU) x hx
-    ).hasDerivWithinAt
-
 /-- **The Euler-Maclaurin summation formula** for real end points and a `C^p` function.  Let
 `a ≤ b` be real numbers and `p ≥ 1`.  If `f` is `C^p` on `[a, b]`, then the sum of `f i` over the
 integers `i ∈ (a, b]` equals
@@ -344,24 +337,28 @@ theorem sum_Ioc_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : 
           periodizedBernoulli p t • iteratedDerivWithin p f (Set.Icc a b) t := by
   rcases hab.eq_or_lt with rfl | hlt
   · simp
-  · obtain ⟨hd, hi⟩ := hasDerivWithinAt_iteratedDerivWithin hlt hf
+  · have hU : UniqueDiffOn ℝ (Set.Icc a b) := uniqueDiffOn_Icc hlt
     simpa only [iteratedDerivWithin_zero] using
       sum_Ioc_eq_integral_add_of_hasDerivWithinAt
-        (F := fun k ↦ iteratedDerivWithin k f (Set.Icc a b)) hp hab hd hi
+        (F := fun k ↦ iteratedDerivWithin k f (Set.Icc a b)) hp hab
+        (fun k hk x hx ↦ hf.hasDerivWithinAt_iteratedDerivWithin (by exact_mod_cast hk) hU hx)
+        ((hf.continuousOn_iteratedDerivWithin le_rfl hU).intervalIntegrable_of_Icc hab)
 
-/-- A sum over `Finset.Ioc` in `ℕ` is the sum over `Finset.Ioc` in `ℤ` of the cast end points. -/
-private theorem sum_Ioc_natCast {G : Type*} [AddCommMonoid G] (f : ℤ → G) (a b : ℕ) :
-    ∑ i ∈ Finset.Ioc (a : ℤ) b, f i = ∑ i ∈ Finset.Ioc a b, f i := by
-  have himage : Finset.Ioc (a : ℤ) b = (Finset.Ioc a b).image (Nat.cast : ℕ → ℤ) := by
-    refine Finset.coe_injective ?_
-    rw [Finset.coe_image, Finset.coe_Ioc, Finset.coe_Ioc, Nat.image_cast_int_Ioc]
-  rw [himage, Finset.sum_image (fun x _ y _ hxy ↦ by exact_mod_cast hxy)]
+/-- A sum over a finite set `t` of integers is the sum over a finite set `s` of natural numbers if
+the cast maps `s` onto `t`.  This reindexes sums over `Finset.Ioc` and `Finset.Icc`, with
+`Nat.image_cast_int_Ioc` and `Nat.image_cast_int_Icc`. -/
+private theorem sum_intCast_eq_sum {G : Type*} [AddCommMonoid G] (f : ℤ → G) {s : Finset ℕ}
+    {t : Finset ℤ} (h : Nat.cast '' (s : Set ℕ) = (t : Set ℤ)) :
+    ∑ i ∈ t, f i = ∑ i ∈ s, f i := by
+  have ht : t = s.image (Nat.cast : ℕ → ℤ) :=
+    Finset.coe_injective (by rw [Finset.coe_image]; exact h.symm)
+  rw [ht, Finset.sum_image (fun x _ y _ hxy ↦ by exact_mod_cast hxy)]
 
 /-- **The Euler-Maclaurin summation formula** for a sum over natural numbers, for a family
 `F : ℕ → ℝ → E` of successive derivatives: the case of
 `EulerMaclaurin.sum_Ioc_eq_integral_add_of_hasDerivWithinAt` with `0 ≤ a`, in which the integers
 in `(a, b]` are the natural numbers in `(⌊a⌋₊, ⌊b⌋₊]`. -/
-theorem sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E}
+theorem sum_Ioc_natFloor_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E}
     {a b : ℝ} (ha : 0 ≤ a) (hab : a ≤ b)
     (hF : ∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc a b) x)
     (hFp : IntervalIntegrable (F p) volume a b) :
@@ -372,13 +369,14 @@ theorem sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0)
         ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b, periodizedBernoulli p t • F p t := by
   have h := sum_Ioc_eq_integral_add_of_hasDerivWithinAt hp hab hF hFp
   rw [← Int.natCast_floor_eq_floor ha, ← Int.natCast_floor_eq_floor (ha.trans hab),
-    sum_Ioc_natCast (fun i : ℤ ↦ F 0 (i : ℝ))] at h
-  simpa only [Int.cast_natCast] using h
+    sum_intCast_eq_sum (fun i : ℤ ↦ F 0 (i : ℝ))] at h
+  · simpa only [Int.cast_natCast] using h
+  · simpa only [Finset.coe_Ioc] using Nat.image_cast_int_Ioc _ _
 
 /-- **The Euler-Maclaurin summation formula** for a sum over natural numbers and a `C^p` function:
 the case of `EulerMaclaurin.sum_Ioc_eq_integral_add` with `0 ≤ a`, in which the integers in
 `(a, b]` are the natural numbers in `(⌊a⌋₊, ⌊b⌋₊]`. -/
-theorem sum_Ioc_nat_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : ℝ} (ha : 0 ≤ a)
+theorem sum_Ioc_natFloor_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : ℝ} (ha : 0 ≤ a)
     (hab : a ≤ b) (hf : ContDiffOn ℝ p f (Set.Icc a b)) :
     ∑ i ∈ Finset.Ioc ⌊a⌋₊ ⌊b⌋₊, f (i : ℝ) =
       (∫ t in a..b, f t) +
@@ -389,8 +387,9 @@ theorem sum_Ioc_nat_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a 
           periodizedBernoulli p t • iteratedDerivWithin p f (Set.Icc a b) t := by
   have h := sum_Ioc_eq_integral_add hp hab hf
   rw [← Int.natCast_floor_eq_floor ha, ← Int.natCast_floor_eq_floor (ha.trans hab),
-    sum_Ioc_natCast (fun i : ℤ ↦ f (i : ℝ))] at h
-  simpa only [Int.cast_natCast] using h
+    sum_intCast_eq_sum (fun i : ℤ ↦ f (i : ℝ))] at h
+  · simpa only [Int.cast_natCast] using h
+  · simpa only [Finset.coe_Ioc] using Nat.image_cast_int_Ioc _ _
 
 omit [CompleteSpace E] in
 /-- At integer end points the coefficients `(-1)^(k+1) B_{k+1} / (k+1)!` of the boundary terms
@@ -514,10 +513,8 @@ theorem sum_Icc_nat_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a 
   have h := sum_Icc_int_eq_integral_add hp (a := (a : ℤ)) (b := (b : ℤ)) (by exact_mod_cast hab)
     (by simpa only [Int.cast_natCast] using hf)
   simp only [Int.cast_natCast] at h
-  have himage : Finset.Icc (a : ℤ) b = (Finset.Icc a b).image (Nat.cast : ℕ → ℤ) := by
-    refine Finset.coe_injective ?_
-    rw [Finset.coe_image, Finset.coe_Icc, Finset.coe_Icc, Nat.image_cast_int_Icc]
-  rw [himage, Finset.sum_image (fun x _ y _ hxy ↦ by exact_mod_cast hxy)] at h
-  simpa only [Int.cast_natCast] using h
+  rw [sum_intCast_eq_sum (fun i : ℤ ↦ f (i : ℝ))] at h
+  · simpa only [Int.cast_natCast] using h
+  · simpa only [Finset.coe_Icc] using Nat.image_cast_int_Icc _ _
 
 end EulerMaclaurin

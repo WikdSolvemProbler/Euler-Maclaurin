@@ -28,8 +28,10 @@ Each statement has a companion for a family `F : ℕ → ℝ → E` of successiv
 the derivatives.
 
 For `0 ≤ a`, the same two statements with the sum over `Finset.Ioc ⌊a⌋₊ ⌊b⌋₊` in `ℕ` are
-`EulerMaclaurin.sum_Ioc_nat_eq_integral_add` and
-`EulerMaclaurin.sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt`.
+`EulerMaclaurin.sum_Ioc_natFloor_eq_integral_add` and
+`EulerMaclaurin.sum_Ioc_natFloor_eq_integral_add_of_hasDerivWithinAt`. The infix of a name records
+the type of the end points: none for real end points with the floor in `ℤ`, `natFloor` for real
+end points with the floor in `ℕ`, and `int` and `nat` for end points in `ℤ` and in `ℕ`.
 
 For integer end points `a ≤ b`, `P_n a = P_n b = B_n`, and with `B'_n = (-1)^n B_n` (`bernoulli'`)
 the formula reads
@@ -64,7 +66,9 @@ The remainder integral is bounded explicitly. For `g` interval integrable on `[a
 
 and dividing the rational bound by `p!` gives the error bound
 `‖∑_{a < i ≤ b} F 0 i - ∫_a^b F 0 - (boundary terms of order p)‖ ≤ 4 / 6^p * ∫_a^b ‖F p‖`
-(`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le`).
+(`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le`), and its form for a `C^p` function with
+`F p = iteratedDerivWithin p f (Set.Icc a b)`
+(`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn`).
 
 These rest on the bound `|B_k(x)| ≤ 2 ζ(k) * k! / (2 π)^k` for the Bernoulli polynomials on
 `[0, 1]`, proved from the Fourier expansion in Mathlib and stated with the real series
@@ -75,11 +79,15 @@ These rest on the bound `|B_k(x)| ≤ 2 ζ(k) * k! / (2 π)^k` for the Bernoulli
 | Module | Content | Intended Mathlib file |
 | --- | --- | --- |
 | `EulerMaclaurin.Bernoulli` | bounds for `bernoulliFun k` on `[0, 1]`, the periodic function as `periodizedBernoulli` composed with the quotient map, integration by parts against a Bernoulli polynomial | `Mathlib/NumberTheory/ZetaValues.lean` |
+| `EulerMaclaurin.IteratedDeriv` | `ContDiffOn.hasDerivWithinAt_iteratedDerivWithin`, the derivative of an iterated derivative within a set | `Mathlib/Analysis/Calculus/IteratedDeriv/Defs.lean` |
 | `EulerMaclaurin.Formula` | the formula, with the remainder as an integral | `Mathlib/NumberTheory/EulerMaclaurin.lean` |
 | `EulerMaclaurin.RemainderBound` | the rational bound for the Bernoulli polynomials, bounds for the remainder integral, and the error bound | the same file |
 
 Every import of `EulerMaclaurin.Bernoulli` lies in the import closure of
-`Mathlib/NumberTheory/ZetaValues.lean`. The rational bound for the Bernoulli polynomials needs
+`Mathlib/NumberTheory/ZetaValues.lean`. The two pointwise bounds `4 k! / 6^k` in
+`EulerMaclaurin.RemainderBound`, `abs_bernoulliFun_le_four_mul_factorial_div_six_pow` and
+`abs_periodizedBernoulli_le_four_mul_factorial_div_six_pow`, are in the root namespace, next to the
+other declarations about `bernoulliFun` and `periodizedBernoulli`. The rational bound for the Bernoulli polynomials needs
 `Mathlib/Analysis/Real/Pi/Bounds.lean` and is therefore in `EulerMaclaurin.RemainderBound`. A form of
 the bound on `bernoulliFun k` with `riemannZeta k` is a one-line consequence and belongs in
 `Mathlib/NumberTheory/LSeries/HurwitzZetaValues.lean`.

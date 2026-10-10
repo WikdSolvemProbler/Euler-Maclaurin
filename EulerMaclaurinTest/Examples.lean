@@ -110,8 +110,9 @@ example (n : ℕ) (hn : 0 < n) :
 
 /-- The first order formula, for real end points `0 ≤ a ≤ b` and a function which is differentiable
 on `[a, b]` with continuous derivative: it is the case `p = 1` of
-`EulerMaclaurin.sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt`, with `B₁ x = x - ⌊x⌋₊ - 1 / 2`
-the periodic Bernoulli function of order `1` on the nonnegative reals. -/
+`EulerMaclaurin.sum_Ioc_natFloor_eq_integral_add_of_hasDerivWithinAt`, with
+`B₁ x = x - ⌊x⌋₊ - 1 / 2` the periodic Bernoulli function of order `1` on the nonnegative
+reals. -/
 example {f : ℝ → ℝ} {a b : ℝ} (ha : 0 ≤ a) (hab : a ≤ b)
     (hf : ∀ t ∈ Set.Icc a b, DifferentiableAt ℝ f t)
     (hf' : ContinuousOn (deriv f) (Set.uIcc a b)) :
@@ -121,7 +122,7 @@ example {f : ℝ → ℝ} {a b : ℝ} (ha : 0 ≤ a) (hab : a ≤ b)
   have hB : ∀ t : ℝ, 0 ≤ t → periodizedBernoulli 1 t = t - ⌊t⌋₊ - 1 / 2 := fun t ht ↦ by
     rw [periodizedBernoulli_coe, bernoulliFun_one, ← Int.self_sub_floor,
       ← Int.natCast_floor_eq_floor ht, Int.cast_natCast]
-  have h := sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt (p := 1)
+  have h := sum_Ioc_natFloor_eq_integral_add_of_hasDerivWithinAt (p := 1)
     (F := fun k ↦ if k = 0 then f else deriv f) one_ne_zero ha hab
     (fun k hk x hx ↦ by
       obtain rfl : k = 0 := by omega
@@ -156,8 +157,9 @@ example : ∫ t in (0 : ℝ)..(1 / 2), periodizedBernoulli 1 t • (1 : ℂ) = -
 /-- The rational bound for the remainder integral of order `2` on `[0, 1]` for the constant
 function `1`: `4 * 2! / 6 ^ 2 = 2 / 9`. -/
 example : ‖∫ t in (0 : ℝ)..1, periodizedBernoulli 2 t • (1 : ℂ)‖ ≤ 2 / 9 :=
-  (norm_integral_periodizedBernoulli_smul_le_of_norm_le 2 (M := 1) zero_le_one
-    intervalIntegrable_const fun _ _ ↦ by simp).trans_eq (by norm_num [Nat.factorial])
+  (norm_integral_periodizedBernoulli_smul_le_four_mul_factorial_div_six_pow 2
+    (g := fun _ ↦ (1 : ℂ)) zero_le_one intervalIntegrable_const).trans_eq
+    (by norm_num [Nat.factorial])
 
 /-- The sharp bound in even order: for `g = 1` on `[0, 1]` the remainder integral of order `2` is
 at most `|B_2| = 1 / 6`. -/

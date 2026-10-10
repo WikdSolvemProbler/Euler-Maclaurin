@@ -148,6 +148,7 @@ theorem periodizedBernoulli_intCast (k : ℕ) (m : ℤ) :
 
 /-- The periodized Bernoulli polynomial is measurable on the circle for every `k`, including
 `k = 1`, where it jumps at the origin. -/
+@[fun_prop]
 theorem measurable_periodizedBernoulli (k : ℕ) : Measurable (periodizedBernoulli k) := by
   have h : Measurable fun x : Set.Ico (0 : ℝ) (0 + 1) ↦ bernoulliFun k x :=
     (continuous_bernoulliFun k).measurable.comp measurable_subtype_coe
@@ -163,8 +164,8 @@ theorem IntervalIntegrable.periodizedBernoulli_smul {k : ℕ} {g : ℝ → E} {a
     IntervalIntegrable (fun t : ℝ ↦ periodizedBernoulli k t • g t) volume a b := by
   obtain ⟨C, hC⟩ := (isCompact_Icc (a := (0 : ℝ)) (b := 1)).exists_bound_of_continuousOn
     (continuous_bernoulliFun k).continuousOn
-  have hmeas : Measurable fun x : ℝ ↦ periodizedBernoulli k (x : UnitAddCircle) :=
-    (measurable_periodizedBernoulli k).comp (AddCircle.measurable_mk' (a := 1))
+  have hmeas : Measurable fun x : ℝ ↦ periodizedBernoulli k (x : UnitAddCircle) := by
+    fun_prop
   have hbound : ∀ x : ℝ, ‖periodizedBernoulli k (x : UnitAddCircle)‖ ≤ C := fun x ↦ by
     rw [periodizedBernoulli_coe]
     exact hC _ ⟨Int.fract_nonneg x, (Int.fract_lt_one x).le⟩
