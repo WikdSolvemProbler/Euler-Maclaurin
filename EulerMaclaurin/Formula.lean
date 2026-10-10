@@ -7,22 +7,30 @@ module
 
 public import EulerMaclaurin.Bernoulli
 public import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
+public import Mathlib.Data.Nat.Cast.SetInterval
 
 /-!
 # The Euler-Maclaurin summation formula
 
-Let $E$ be a complete real normed space, let $a \le b$ be integers and let $p \ge 1$.  Let
-$B_n$ be the Bernoulli numbers and let $P_p(t) = B_p(\{t\})$ be the periodic Bernoulli function,
-which in Lean is `periodizedBernoulli p`, evaluated at the class of the real number $t$.  For a
-function $f : \mathbb{R} \to E$ which is $C^p$ on $[a, b]$,
-$$\sum_{i = a + 1}^{b} f(i) = \int_a^b f(t) \, dt
-  + \sum_{k = 0}^{p - 1} \frac{(-1)^{k + 1} B_{k + 1}}{(k + 1)!}
-    \bigl( f^{(k)}(b) - f^{(k)}(a) \bigr)
+Let $E$ be a complete real normed space, let $a \le b$ be real numbers and let $p \ge 1$.  Let
+$P_n(t) = B_n(\{t\})$ be the periodic Bernoulli function, which in Lean is
+`periodizedBernoulli n`, evaluated at the class of the real number $t$.  For a function
+$f : \mathbb{R} \to E$ which is $C^p$ on $[a, b]$,
+$$\sum_{a < i \le b} f(i) = \int_a^b f(t) \, dt
+  + \sum_{k = 0}^{p - 1} \frac{(-1)^{k + 1}}{(k + 1)!}
+    \bigl( P_{k + 1}(b) f^{(k)}(b) - P_{k + 1}(a) f^{(k)}(a) \bigr)
   + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p(t) f^{(p)}(t) \, dt.$$
-This is the form with the sum over `Finset.Ioc a b`.  It has uniform coefficients, no case
-distinction on the parity of $p$, and it is additive over adjacent intervals, like the Abel
-summation formula.  Since $B_1 = -1/2$ and $B_n = 0$ for odd $n \ge 3$, the sum over
-`Finset.Icc a b` is
+The sum is over the integers in $(a, b]$, written `Finset.Ioc ⌊a⌋ ⌊b⌋`.  The formula is additive
+over adjacent intervals, like the Abel summation formula, and has uniform coefficients with no
+case distinction on the parity of $p$.  For $p = 1$ it is the first order formula
+$\sum_{a < i \le b} f(i) = \int_a^b f + \int_a^b P_1 f' + P_1(a) f(a) - P_1(b) f(b)$.
+
+If $a$ and $b$ are integers, then $P_n(a) = B_n$ and $P_n(b) = B_n$, and with
+$B'_n = (-1)^n B_n$ the formula reads
+$$\sum_{i = a + 1}^{b} f(i) = \int_a^b f(t) \, dt
+  + \sum_{k = 0}^{p - 1} \frac{B'_{k + 1}}{(k + 1)!} \bigl( f^{(k)}(b) - f^{(k)}(a) \bigr)
+  + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p(t) f^{(p)}(t) \, dt.$$
+Since $B'_1 = 1/2$ and $B'_n = 0$ for odd $n \ge 3$, the sum over `Finset.Icc a b` is
 $$\sum_{i = a}^{b} f(i) = \int_a^b f(t) \, dt + \frac{f(a) + f(b)}{2}
   + \sum_{j = 0}^{\lfloor p / 2 \rfloor - 1} \frac{B_{2j + 2}}{(2j + 2)!}
     \bigl( f^{(2j + 1)}(b) - f^{(2j + 1)}(a) \bigr)
@@ -31,33 +39,40 @@ Bounds on the remainder integral are in `EulerMaclaurin.RemainderBound`.
 
 ## Main results
 
-* `EulerMaclaurin.sum_Ioc_eq_integral_add`: the formula for a $C^p$ function, with the sum over
-  `Finset.Ioc a b` and the derivatives written as `iteratedDerivWithin`.
+* `EulerMaclaurin.sum_Ioc_eq_integral_add`: the formula for real end points and a $C^p$ function,
+  with the derivatives written as `iteratedDerivWithin`.
 * `EulerMaclaurin.sum_Ioc_eq_integral_add_of_hasDerivWithinAt`: the same formula for a family
   `F : ℕ → ℝ → E` of successive derivatives, where `F (k + 1)` is a derivative of `F k` within
   $[a, b]$ for $k < p$ and `F p` is only interval integrable.  Closed forms for the derivatives can
   be used directly, and the $C^p$ version is a corollary.
-* `EulerMaclaurin.sum_Icc_eq_integral_add` and
-  `EulerMaclaurin.sum_Icc_eq_integral_add_of_hasDerivWithinAt`: the same two statements for
-  the sum over `Finset.Icc a b`, with the boundary terms regrouped as above.
-* `EulerMaclaurin.sum_Icc_nat_eq_integral_add`: the $C^p$ statement for `Finset.Icc` with end
-  points in `ℕ`.
+* `EulerMaclaurin.sum_Ioc_nat_eq_integral_add` and
+  `EulerMaclaurin.sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt`: the same two statements for
+  $0 \le a$, with the sum over `Finset.Ioc ⌊a⌋₊ ⌊b⌋₊` in `ℕ`.
+* `EulerMaclaurin.sum_Ioc_int_eq_integral_add` and
+  `EulerMaclaurin.sum_Ioc_int_eq_integral_add_of_hasDerivWithinAt`: the two statements for integer
+  end points, in which the periodic Bernoulli function does not occur in the boundary terms.
+* `EulerMaclaurin.sum_Icc_int_eq_integral_add` and `EulerMaclaurin.sum_Icc_nat_eq_integral_add`:
+  the $C^p$ statement for `Finset.Icc` with end points in `ℤ` and in `ℕ`.
 
 ## Implementation notes
 
 The order $p$ must be positive: the term with $k = 0$ comes from the integration by parts that
 raises the order from $0$ to $1$.  Every order $p \ge 1$ is covered, odd and even.
 
-The proof integrates by parts on one unit interval $[m, m + 1]$ against the polynomial
-$t \mapsto B_{k + 1}(t - m) / (k + 1)$, which is smooth, so the corners of the periodic function at
-the integers play no role (`integral_bernoulliFun_comp_sub_right_smul`).  The unit interval formula
-is then summed by induction on the right end point.  On a unit interval the periodic Bernoulli
-function agrees with the polynomial except at the right end point, a null set.
+The proof integrates by parts against the polynomial $t \mapsto B_{k + 1}(t - c) / (k + 1)$, which
+is smooth, so the corners of the periodic function at the integers play no role
+(`integral_bernoulliFun_comp_sub_right_smul`).  Iterating gives an identity on any interval, with
+the polynomial $B_p(t - c)$ in place of $P_p$ in the remainder.  If $x \le y$ both lie in
+$[m, m + 1)$ for an integer $m$, then $P_n = B_n(\cdot - m)$ on $[x, y]$, and the identity says
+that the right-hand side of the formula over $[x, y]$ vanishes, in agreement with the empty sum.
+If $x \in [m, m + 1)$ and the right end point is the integer $m + 1$, then $P_n(m + 1) = B_n(0)$
+differs from $B_n(1)$ by $1$ for $n = 1$ and by $0$ otherwise; this produces the single term
+$f(m + 1)$ of the sum.  The general formula follows by induction on the number of integers in
+$(a, b]$: the first integer $m + 1 > a$ is split off, and the rest is the same statement for the
+interval $[m + 1, b]$.
 
 Only one-sided derivatives are required at the end points $a$ and $b$, as in
 `trapezoidal_error_le` in `Mathlib/MeasureTheory/Integral/IntervalIntegral/TrapezoidalRule.lean`.
-
-This file is meant for Mathlib as `Mathlib/NumberTheory/EulerMaclaurin.lean`.
 
 ## References
 
@@ -80,278 +95,428 @@ namespace EulerMaclaurin
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
-/-- Integration by parts against a Bernoulli polynomial on the unit interval `[m, m + 1]`. -/
-private theorem integral_unit_bernoulliFun_smul (n : ℕ) {f f' : ℝ → E} {m : ℝ}
-    (hf : ∀ x ∈ Set.Icc m (m + 1), HasDerivWithinAt f (f' x) (Set.Icc m (m + 1)) x)
-    (hf' : IntervalIntegrable f' volume m (m + 1)) :
-    ∫ t in m..m + 1, bernoulliFun n (t - m) • f t =
-      ((n : ℝ) + 1)⁻¹ • (bernoulliFun (n + 1) 1 • f (m + 1) - bernoulliFun (n + 1) 0 • f m -
-        ∫ t in m..m + 1, bernoulliFun (n + 1) (t - m) • f' t) := by
-  have h := integral_bernoulliFun_comp_sub_right_smul n (a := m) (b := m + 1) (c := m)
-    (by rwa [Set.uIcc_of_le (by linarith)]) hf'
-  simpa only [add_sub_cancel_left, sub_self] using h
-
-/-- The Euler-Maclaurin formula on the unit interval `[m, m + 1]`, with the Bernoulli polynomial
-`B_p(t - m)` in the remainder in place of the periodic Bernoulli function. -/
-private theorem unit_formula {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E} {m : ℝ}
-    (hF : ∀ k < p, ∀ x ∈ Set.Icc m (m + 1),
-      HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc m (m + 1)) x)
-    (hFp : IntervalIntegrable (F p) volume m (m + 1)) :
-    F 0 (m + 1) - ∫ t in m..m + 1, F 0 t =
-      ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) * ((bernoulli (k + 1) : ℚ) : ℝ) / ((k + 1)! : ℝ)) •
-          (F k (m + 1) - F k m) +
-        ((-1 : ℝ) ^ (p + 1) / p !) • ∫ t in m..m + 1, bernoulliFun p (t - m) • F p t := by
-  have hp1 : 1 ≤ p := Nat.one_le_iff_ne_zero.mpr hp
-  clear hp
+/-- **Repeated integration by parts** against the translated Bernoulli polynomials
+`B_{k+1}(t - c)`: the formula of order `p` over `[x, y]`, with the polynomial `B_p(t - c)` in the
+remainder in place of the periodic Bernoulli function, and with no sum over the integers. -/
+private theorem integral_add_sum_add_integral_bernoulliFun_eq_zero {F : ℕ → ℝ → E} {x y c : ℝ}
+    (p : ℕ) (hF : ∀ k < p, ∀ t ∈ Set.uIcc x y,
+      HasDerivWithinAt (F k) (F (k + 1) t) (Set.uIcc x y) t)
+    (hFp : IntervalIntegrable (F p) volume x y) :
+    (∫ t in x..y, F 0 t) +
+      ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+        (bernoulliFun (k + 1) (y - c) • F k y - bernoulliFun (k + 1) (x - c) • F k x) +
+      ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in x..y, bernoulliFun p (t - c) • F p t = 0 := by
   revert hF hFp
-  induction p, hp1 using Nat.le_induction with
-  | base =>
+  induction p with
+  | zero =>
+    intro _ _
+    simp
+  | succ p ih =>
     intro hF hFp
-    have h := integral_unit_bernoulliFun_smul 0 (hF 0 (by omega)) hFp
-    have e1 : bernoulliFun 1 1 = 1 / 2 := by rw [bernoulliFun_one]; norm_num
-    have e0 : bernoulliFun 1 0 = -(1 / 2) := by rw [bernoulliFun_one]; norm_num
-    simp only [bernoulliFun_zero, one_smul, zero_add, Nat.cast_zero, inv_one, e1, e0] at h
-    have hc : (-1 : ℝ) ^ (0 + 1) * ((bernoulli (0 + 1) : ℚ) : ℝ) / ((0 + 1)! : ℝ) = 1 / 2 := by
-      norm_num [bernoulli_one]
-    have hc' : (-1 : ℝ) ^ (1 + 1) / (1 ! : ℝ) = 1 := by norm_num
-    rw [Finset.sum_range_one, hc, hc', one_smul]
-    linear_combination (norm := module) (-1 : ℝ) • h
-  | succ p hp ih =>
-    intro hF hFp
-    have hcp : ContinuousOn (F p) (Set.Icc m (m + 1)) := fun x hx ↦
-      (hF p (Nat.lt_succ_self p) x hx).continuousWithinAt
-    have h1 := ih (fun k hk x hx ↦ hF k (by omega) x hx)
-      (hcp.intervalIntegrable_of_Icc (by linarith))
-    have h2 := integral_unit_bernoulliFun_smul p (hF p (Nat.lt_succ_self p)) hFp
-    rw [bernoulliFun_endpoints_eq_of_ne_one (by omega : p + 1 ≠ 1), bernoulliFun_eval_zero] at h2
-    rw [h2] at h1
-    have hfac : (((p + 1)! : ℕ) : ℝ) = ((p : ℝ) + 1) * ((p ! : ℕ) : ℝ) := by
+    have hcp : ContinuousOn (F p) (Set.uIcc x y) := fun t ht ↦
+      (hF p (Nat.lt_add_one p) t ht).continuousWithinAt
+    have h1 := ih (fun k hk t ht ↦ hF k (by omega) t ht) hcp.intervalIntegrable
+    have h2 := integral_bernoulliFun_comp_sub_right_smul p (c := c)
+      (hF p (Nat.lt_add_one p)) hFp
+    have hfac : (((p + 1)! : ℕ) : ℝ) = ((p : ℝ) + 1) * (p ! : ℝ) := by
       rw [Nat.factorial_succ]
       push_cast
       ring
     have hne : ((p ! : ℕ) : ℝ) ≠ 0 := by positivity
-    have hA : (-1 : ℝ) ^ (p + 1) * ((bernoulli (p + 1) : ℚ) : ℝ) / (((p + 1)! : ℕ) : ℝ) =
-        (-1 : ℝ) ^ (p + 1) / (p ! : ℝ) * ((p : ℝ) + 1)⁻¹ * ((bernoulli (p + 1) : ℚ) : ℝ) := by
+    have hA : (-1 : ℝ) ^ (p + 1) / (((p + 1)! : ℕ) : ℝ) =
+        (-1 : ℝ) ^ (p + 1) / (p ! : ℝ) * ((p : ℝ) + 1)⁻¹ := by
       rw [hfac]
       field_simp
     have hB : (-1 : ℝ) ^ (p + 1 + 1) / (((p + 1)! : ℕ) : ℝ) =
         -((-1 : ℝ) ^ (p + 1) / (p ! : ℝ) * ((p : ℝ) + 1)⁻¹) := by
       rw [hfac, pow_succ]
       field_simp
+    rw [h2] at h1
     rw [Finset.sum_range_succ, hA, hB]
     linear_combination (norm := module) h1
 
-omit [CompleteSpace E] in
-/-- For an integer `m`, the integral over `[m, m + 1]` of the periodic Bernoulli function times `g`
-is the integral against the translated Bernoulli polynomial: the two functions differ only at
-`m + 1`. -/
-private theorem integral_periodizedBernoulli_smul_intCast_add_one (p : ℕ) (g : ℝ → E) (m : ℤ) :
-    ∫ t in (m : ℝ)..(m : ℝ) + 1, periodizedBernoulli p t • g t =
-      ∫ t in (m : ℝ)..(m : ℝ) + 1, bernoulliFun p (t - m) • g t := by
-  refine intervalIntegral.integral_congr_uIoo fun t ht ↦ ?_
-  rw [Set.uIoo_of_le (by linarith)] at ht
-  simp only [periodizedBernoulli_coe_of_mem_Ico_intCast (Set.Ioo_subset_Ico_self ht)]
+/-- If `x ≤ y` have the same integer part, the right-hand side of the Euler-Maclaurin formula over
+`[x, y]` is zero: there is no integer in `(x, y]`, and the periodic Bernoulli function is a
+translate of the Bernoulli polynomial on `[x, y]`. -/
+private theorem rhs_eq_zero {p : ℕ} {F : ℕ → ℝ → E} {x y : ℝ} (hxy : x ≤ y) (hfl : ⌊x⌋ = ⌊y⌋)
+    (hF : ∀ k < p, ∀ t ∈ Set.Icc x y, HasDerivWithinAt (F k) (F (k + 1) t) (Set.Icc x y) t)
+    (hFp : IntervalIntegrable (F p) volume x y) :
+    (∫ t in x..y, F 0 t) +
+      ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+        (periodizedBernoulli (k + 1) y • F k y - periodizedBernoulli (k + 1) x • F k x) +
+      ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in x..y, periodizedBernoulli p t • F p t = 0 := by
+  have hx : x ∈ Set.Ico (⌊x⌋ : ℝ) (⌊x⌋ + 1) := ⟨Int.floor_le x, Int.lt_floor_add_one x⟩
+  have hy : y ∈ Set.Ico (⌊x⌋ : ℝ) (⌊x⌋ + 1) := by
+    rw [hfl]
+    exact ⟨Int.floor_le y, Int.lt_floor_add_one y⟩
+  have hmem : ∀ t ∈ Set.Icc x y, t ∈ Set.Ico (⌊x⌋ : ℝ) (⌊x⌋ + 1) := fun t ht ↦
+    ⟨hx.1.trans ht.1, ht.2.trans_lt hy.2⟩
+  have hint : ∫ t in x..y, periodizedBernoulli p t • F p t =
+      ∫ t in x..y, bernoulliFun p (t - ⌊x⌋) • F p t := by
+    refine intervalIntegral.integral_congr fun t ht ↦ ?_
+    rw [Set.uIcc_of_le hxy] at ht
+    rw [periodizedBernoulli_coe_of_mem_Ico_intCast (hmem t ht)]
+  have h := integral_add_sum_add_integral_bernoulliFun_eq_zero (c := (⌊x⌋ : ℝ)) p
+    (by rw [Set.uIcc_of_le hxy]; exact hF) hFp
+  rw [hint]
+  simp only [periodizedBernoulli_coe_of_mem_Ico_intCast hx,
+    periodizedBernoulli_coe_of_mem_Ico_intCast hy]
+  exact h
 
-/-- **The Euler-Maclaurin summation formula over `Finset.Ioc`**, for a family `F : ℕ → ℝ → E` of
-successive derivatives.  Let `a ≤ b` be integers, `p ≥ 1`, and suppose that for `k < p` the function
-`F k` has derivative `F (k + 1)` within `[a, b]`, and that `F p` is interval integrable on
-`[a, b]`.  Then `∑ i ∈ Finset.Ioc a b, F 0 i` equals
-$$\int_a^b F_0 + \sum_{k < p} \frac{(-1)^{k + 1} B_{k + 1}}{(k + 1)!} (F_k(b) - F_k(a))
+/-- If `x` lies in `[m, m + 1)` and `n = m + 1`, the right-hand side of the Euler-Maclaurin formula
+over `[x, n]` is `F 0 n`, the value at the one integer in `(x, n]`.  The periodic Bernoulli
+function at the integer `n` is `B_k(0)`, which differs from `B_k(1)` by `1` for `k = 1` and by `0`
+otherwise. -/
+private theorem rhs_eq_of_floor_add_one {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E} {x : ℝ} {n : ℤ}
+    (hn : ⌊x⌋ + 1 = n)
+    (hF : ∀ k < p, ∀ t ∈ Set.Icc x (n : ℝ),
+      HasDerivWithinAt (F k) (F (k + 1) t) (Set.Icc x (n : ℝ)) t)
+    (hFp : IntervalIntegrable (F p) volume x (n : ℝ)) :
+    (∫ t in x..(n : ℝ), F 0 t) +
+      ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+        (periodizedBernoulli (k + 1) (n : ℝ) • F k n - periodizedBernoulli (k + 1) x • F k x) +
+      ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in x..(n : ℝ), periodizedBernoulli p t • F p t =
+    F 0 n := by
+  have hx : x ∈ Set.Ico (⌊x⌋ : ℝ) (⌊x⌋ + 1) := ⟨Int.floor_le x, Int.lt_floor_add_one x⟩
+  have hn' : (n : ℝ) = ⌊x⌋ + 1 := by exact_mod_cast hn.symm
+  have hxn : x ≤ n := by
+    rw [hn']
+    exact hx.2.le
+  have hint : ∫ t in x..(n : ℝ), periodizedBernoulli p t • F p t =
+      ∫ t in x..(n : ℝ), bernoulliFun p (t - ⌊x⌋) • F p t := by
+    refine intervalIntegral.integral_congr_uIoo fun t ht ↦ ?_
+    rw [Set.uIoo_of_le hxn] at ht
+    have hmem : t ∈ Set.Ico (⌊x⌋ : ℝ) (⌊x⌋ + 1) := ⟨hx.1.trans ht.1.le, by linarith [ht.2]⟩
+    rw [periodizedBernoulli_coe_of_mem_Ico_intCast hmem]
+  have h := integral_add_sum_add_integral_bernoulliFun_eq_zero (c := (⌊x⌋ : ℝ)) p
+    (by rw [Set.uIcc_of_le hxn]; exact hF) hFp
+  have hy1 : (n : ℝ) - ⌊x⌋ = 1 := by
+    rw [hn']
+    ring
+  rw [hy1] at h
+  have hb : (bernoulli 1 : ℝ) = -(1 / 2) := by norm_num [bernoulli_one]
+  have hB : bernoulliFun 1 1 = 1 / 2 := by
+    rw [bernoulliFun_one]
+    norm_num
+  have hdelta : ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+        ((bernoulli (k + 1) : ℝ) • F k n - bernoulliFun (k + 1) (x - ⌊x⌋) • F k x) =
+      ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+        (bernoulliFun (k + 1) 1 • F k n - bernoulliFun (k + 1) (x - ⌊x⌋) • F k x) + F 0 n := by
+    obtain ⟨q, rfl⟩ : ∃ q, p = q + 1 := ⟨p - 1, by omega⟩
+    rw [Finset.sum_range_succ', Finset.sum_range_succ']
+    have hrest : ∑ i ∈ Finset.range q, ((-1 : ℝ) ^ (i + 1 + 1) / ((i + 1 + 1)! : ℝ)) •
+          ((bernoulli (i + 1 + 1) : ℝ) • F (i + 1) n -
+            bernoulliFun (i + 1 + 1) (x - ⌊x⌋) • F (i + 1) x) =
+        ∑ i ∈ Finset.range q, ((-1 : ℝ) ^ (i + 1 + 1) / ((i + 1 + 1)! : ℝ)) •
+          (bernoulliFun (i + 1 + 1) 1 • F (i + 1) n -
+            bernoulliFun (i + 1 + 1) (x - ⌊x⌋) • F (i + 1) x) :=
+      Finset.sum_congr rfl fun i _ ↦ by
+        rw [bernoulliFun_endpoints_eq_of_ne_one (by omega), bernoulliFun_eval_zero]
+    simp only [zero_add, Nat.factorial_one, Nat.cast_one, div_one, pow_one, hb, hB]
+    linear_combination (norm := module) hrest
+  rw [hint]
+  simp only [periodizedBernoulli_intCast, periodizedBernoulli_coe_of_mem_Ico_intCast hx]
+  linear_combination (norm := module) h + hdelta
+
+/-- The Euler-Maclaurin formula for real end points, by induction on the number `N` of integers
+in `(a, b]`. -/
+private theorem sum_Ioc_floor_aux {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E} {b : ℝ} (N : ℕ) :
+    ∀ a : ℝ, a ≤ b → ⌊b⌋ - ⌊a⌋ = N →
+      (∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc a b) x) →
+      IntervalIntegrable (F p) volume a b →
+      ∑ i ∈ Finset.Ioc ⌊a⌋ ⌊b⌋, F 0 (i : ℝ) =
+        (∫ t in a..b, F 0 t) +
+          ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+            (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) a • F k a) +
+          ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b, periodizedBernoulli p t • F p t := by
+  induction N with
+  | zero =>
+    intro a hab hN hF hFp
+    have hfl : ⌊a⌋ = ⌊b⌋ := by omega
+    rw [hfl, Finset.Ioc_self, Finset.sum_empty]
+    exact (rhs_eq_zero hab hfl hF hFp).symm
+  | succ N ih =>
+    intro a hab hN hF hFp
+    obtain ⟨n, hn⟩ : ∃ n : ℤ, ⌊a⌋ + 1 = n := ⟨_, rfl⟩
+    have hn_le : n ≤ ⌊b⌋ := by omega
+    have hnb : (n : ℝ) ≤ b := by
+      have h1 : (n : ℝ) ≤ ⌊b⌋ := by exact_mod_cast hn_le
+      linarith [Int.floor_le b]
+    have han : a ≤ n := by
+      have h : (n : ℝ) = ⌊a⌋ + 1 := by exact_mod_cast hn.symm
+      rw [h]
+      exact (Int.lt_floor_add_one a).le
+    have hfln : ⌊(n : ℝ)⌋ = n := Int.floor_intCast n
+    have hsub1 : Set.Icc a (n : ℝ) ⊆ Set.Icc a b := Set.Icc_subset_Icc_right hnb
+    have hsub2 : Set.Icc (n : ℝ) b ⊆ Set.Icc a b := Set.Icc_subset_Icc_left han
+    have hmem : (n : ℝ) ∈ Set.uIcc a b := Set.mem_uIcc_of_le han hnb
+    have hFp1 : IntervalIntegrable (F p) volume a (n : ℝ) :=
+      hFp.mono_set (Set.uIcc_subset_uIcc_left hmem)
+    have hFp2 : IntervalIntegrable (F p) volume (n : ℝ) b :=
+      hFp.mono_set (Set.uIcc_subset_uIcc_right hmem)
+    have hc0 : ContinuousOn (F 0) (Set.Icc a b) := fun x hx ↦
+      (hF 0 (Nat.pos_of_ne_zero hp) x hx).continuousWithinAt
+    have hI1 : IntervalIntegrable (F 0) volume a (n : ℝ) :=
+      (hc0.mono hsub1).intervalIntegrable_of_Icc han
+    have hI2 : IntervalIntegrable (F 0) volume (n : ℝ) b :=
+      (hc0.mono hsub2).intervalIntegrable_of_Icc hnb
+    have ih' := ih (n : ℝ) hnb (by rw [hfln]; omega)
+      (fun k hk x hx ↦ (hF k hk x (hsub2 hx)).mono hsub2) hFp2
+    have hstep := rhs_eq_of_floor_add_one hp hn
+      (fun k hk x hx ↦ (hF k hk x (hsub1 hx)).mono hsub1) hFp1
+    have hsplit : Finset.Ioc ⌊a⌋ ⌊b⌋ = insert n (Finset.Ioc n ⌊b⌋) := by
+      ext i
+      simp only [Finset.mem_Ioc, Finset.mem_insert]
+      omega
+    have hrem : ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b, periodizedBernoulli p t • F p t =
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • (∫ t in a..(n : ℝ), periodizedBernoulli p t • F p t) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in (n : ℝ)..b, periodizedBernoulli p t • F p t := by
+      rw [← smul_add, intervalIntegral.integral_add_adjacent_intervals
+        hFp1.periodizedBernoulli_smul hFp2.periodizedBernoulli_smul]
+    have hbd : ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+          (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) a • F k a) =
+        ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+          (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) (n : ℝ) • F k n) +
+        ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+          (periodizedBernoulli (k + 1) (n : ℝ) • F k n -
+            periodizedBernoulli (k + 1) a • F k a) := by
+      rw [← Finset.sum_add_distrib]
+      refine Finset.sum_congr rfl fun k _ ↦ ?_
+      rw [← smul_add]
+      congr 1
+      abel
+    rw [hfln] at ih'
+    rw [hsplit, Finset.sum_insert (by simp),
+      ← intervalIntegral.integral_add_adjacent_intervals hI1 hI2, hrem, hbd]
+    linear_combination (norm := module) ih' - hstep
+
+/-- **The Euler-Maclaurin summation formula** for real end points, for a family `F : ℕ → ℝ → E` of
+successive derivatives.  Let `a ≤ b` be real numbers, `p ≥ 1`, and suppose that for `k < p` the
+function `F k` has derivative `F (k + 1)` within `[a, b]`, and that `F p` is interval integrable on
+`[a, b]`.  Then the sum of `F 0 i` over the integers `i ∈ (a, b]` equals
+$$\int_a^b F_0 + \sum_{k < p} \frac{(-1)^{k + 1}}{(k + 1)!}
+  \bigl(P_{k + 1}(b) F_k(b) - P_{k + 1}(a) F_k(a)\bigr)
   + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p F_p,$$
-where `P_p = periodizedBernoulli p`. -/
+where `P_n = periodizedBernoulli n`, evaluated at the class of a real number. -/
 theorem sum_Ioc_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E}
+    {a b : ℝ} (hab : a ≤ b)
+    (hF : ∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc a b) x)
+    (hFp : IntervalIntegrable (F p) volume a b) :
+    ∑ i ∈ Finset.Ioc ⌊a⌋ ⌊b⌋, F 0 (i : ℝ) =
+      (∫ t in a..b, F 0 t) +
+        ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+          (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) a • F k a) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b, periodizedBernoulli p t • F p t :=
+  sum_Ioc_floor_aux hp (⌊b⌋ - ⌊a⌋).toNat a hab
+    (Int.toNat_of_nonneg (sub_nonneg.2 (Int.floor_mono hab))).symm hF hFp
+
+omit [CompleteSpace E] in
+/-- The hypotheses of the family version of the formula for a function which is `C^p` on `[a, b]`,
+with the successive derivatives `iteratedDerivWithin k f (Set.Icc a b)`. -/
+private theorem hasDerivWithinAt_iteratedDerivWithin {f : ℝ → E} {p : ℕ} {a b : ℝ} (hab : a < b)
+    (hf : ContDiffOn ℝ p f (Set.Icc a b)) :
+    (∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (iteratedDerivWithin k f (Set.Icc a b))
+      (iteratedDerivWithin (k + 1) f (Set.Icc a b) x) (Set.Icc a b) x) ∧
+    IntervalIntegrable (iteratedDerivWithin p f (Set.Icc a b)) volume a b := by
+  have hU : UniqueDiffOn ℝ (Set.Icc a b) := uniqueDiffOn_Icc hab
+  refine ⟨fun k hk x hx ↦ ?_,
+    (hf.continuousOn_iteratedDerivWithin le_rfl hU).intervalIntegrable_of_Icc hab.le⟩
+  rw [iteratedDerivWithin_succ]
+  exact ((hf.differentiableOn_iteratedDerivWithin (by exact_mod_cast hk) hU) x hx
+    ).hasDerivWithinAt
+
+/-- **The Euler-Maclaurin summation formula** for real end points and a `C^p` function.  Let
+`a ≤ b` be real numbers and `p ≥ 1`.  If `f` is `C^p` on `[a, b]`, then the sum of `f i` over the
+integers `i ∈ (a, b]` equals
+$$\int_a^b f + \sum_{k < p} \frac{(-1)^{k + 1}}{(k + 1)!}
+  \bigl(P_{k + 1}(b) f^{(k)}(b) - P_{k + 1}(a) f^{(k)}(a)\bigr)
+  + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p f^{(p)},$$
+where `P_n = periodizedBernoulli n` and the derivatives `f^(k)` are `iteratedDerivWithin` on
+`[a, b]`. -/
+theorem sum_Ioc_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : ℝ} (hab : a ≤ b)
+    (hf : ContDiffOn ℝ p f (Set.Icc a b)) :
+    ∑ i ∈ Finset.Ioc ⌊a⌋ ⌊b⌋, f (i : ℝ) =
+      (∫ t in a..b, f t) +
+        ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+          (periodizedBernoulli (k + 1) b • iteratedDerivWithin k f (Set.Icc a b) b -
+            periodizedBernoulli (k + 1) a • iteratedDerivWithin k f (Set.Icc a b) a) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b,
+          periodizedBernoulli p t • iteratedDerivWithin p f (Set.Icc a b) t := by
+  rcases hab.eq_or_lt with rfl | hlt
+  · simp
+  · obtain ⟨hd, hi⟩ := hasDerivWithinAt_iteratedDerivWithin hlt hf
+    simpa only [iteratedDerivWithin_zero] using
+      sum_Ioc_eq_integral_add_of_hasDerivWithinAt
+        (F := fun k ↦ iteratedDerivWithin k f (Set.Icc a b)) hp hab hd hi
+
+/-- A sum over `Finset.Ioc` in `ℕ` is the sum over `Finset.Ioc` in `ℤ` of the cast end points. -/
+private theorem sum_Ioc_natCast {G : Type*} [AddCommMonoid G] (f : ℤ → G) (a b : ℕ) :
+    ∑ i ∈ Finset.Ioc (a : ℤ) b, f i = ∑ i ∈ Finset.Ioc a b, f i := by
+  have himage : Finset.Ioc (a : ℤ) b = (Finset.Ioc a b).image (Nat.cast : ℕ → ℤ) := by
+    refine Finset.coe_injective ?_
+    rw [Finset.coe_image, Finset.coe_Ioc, Finset.coe_Ioc, Nat.image_cast_int_Ioc]
+  rw [himage, Finset.sum_image (fun x _ y _ hxy ↦ by exact_mod_cast hxy)]
+
+/-- **The Euler-Maclaurin summation formula** for a sum over natural numbers, for a family
+`F : ℕ → ℝ → E` of successive derivatives: the case of
+`EulerMaclaurin.sum_Ioc_eq_integral_add_of_hasDerivWithinAt` with `0 ≤ a`, in which the integers
+in `(a, b]` are the natural numbers in `(⌊a⌋₊, ⌊b⌋₊]`. -/
+theorem sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E}
+    {a b : ℝ} (ha : 0 ≤ a) (hab : a ≤ b)
+    (hF : ∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc a b) x)
+    (hFp : IntervalIntegrable (F p) volume a b) :
+    ∑ i ∈ Finset.Ioc ⌊a⌋₊ ⌊b⌋₊, F 0 (i : ℝ) =
+      (∫ t in a..b, F 0 t) +
+        ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+          (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) a • F k a) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b, periodizedBernoulli p t • F p t := by
+  have h := sum_Ioc_eq_integral_add_of_hasDerivWithinAt hp hab hF hFp
+  rw [← Int.natCast_floor_eq_floor ha, ← Int.natCast_floor_eq_floor (ha.trans hab),
+    sum_Ioc_natCast (fun i : ℤ ↦ F 0 (i : ℝ))] at h
+  simpa only [Int.cast_natCast] using h
+
+/-- **The Euler-Maclaurin summation formula** for a sum over natural numbers and a `C^p` function:
+the case of `EulerMaclaurin.sum_Ioc_eq_integral_add` with `0 ≤ a`, in which the integers in
+`(a, b]` are the natural numbers in `(⌊a⌋₊, ⌊b⌋₊]`. -/
+theorem sum_Ioc_nat_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : ℝ} (ha : 0 ≤ a)
+    (hab : a ≤ b) (hf : ContDiffOn ℝ p f (Set.Icc a b)) :
+    ∑ i ∈ Finset.Ioc ⌊a⌋₊ ⌊b⌋₊, f (i : ℝ) =
+      (∫ t in a..b, f t) +
+        ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+          (periodizedBernoulli (k + 1) b • iteratedDerivWithin k f (Set.Icc a b) b -
+            periodizedBernoulli (k + 1) a • iteratedDerivWithin k f (Set.Icc a b) a) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b,
+          periodizedBernoulli p t • iteratedDerivWithin p f (Set.Icc a b) t := by
+  have h := sum_Ioc_eq_integral_add hp hab hf
+  rw [← Int.natCast_floor_eq_floor ha, ← Int.natCast_floor_eq_floor (ha.trans hab),
+    sum_Ioc_natCast (fun i : ℤ ↦ f (i : ℝ))] at h
+  simpa only [Int.cast_natCast] using h
+
+omit [CompleteSpace E] in
+/-- At integer end points the coefficients `(-1)^(k+1) B_{k+1} / (k+1)!` of the boundary terms
+are `B'_{k+1} / (k+1)!`, where `B'_n = (-1)^n B_n` is `bernoulli'`. -/
+private theorem sum_bernoulli'_smul_sub {p : ℕ} (u v : ℕ → E) :
+    ∑ k ∈ Finset.range p, ((bernoulli' (k + 1) : ℝ) / ((k + 1)! : ℝ)) • (u k - v k) =
+      ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+        ((bernoulli (k + 1) : ℝ) • u k - (bernoulli (k + 1) : ℝ) • v k) := by
+  refine Finset.sum_congr rfl fun k _ ↦ ?_
+  rw [bernoulli'_eq_bernoulli]
+  push_cast
+  module
+
+/-- **The Euler-Maclaurin summation formula** for integer end points, for a family
+`F : ℕ → ℝ → E` of successive derivatives.  Let `a ≤ b` be integers, `p ≥ 1`, and suppose that for
+`k < p` the function `F k` has derivative `F (k + 1)` within `[a, b]`, and that `F p` is interval
+integrable on `[a, b]`.  Then `∑ i ∈ Finset.Ioc a b, F 0 i` equals
+$$\int_a^b F_0 + \sum_{k < p} \frac{B'_{k + 1}}{(k + 1)!} (F_k(b) - F_k(a))
+  + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p F_p,$$
+where `B'_n = bernoulli' n` and `P_p = periodizedBernoulli p`. -/
+theorem sum_Ioc_int_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E}
     {a b : ℤ} (hab : a ≤ b)
     (hF : ∀ k < p, ∀ x ∈ Set.Icc (a : ℝ) b,
       HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc (a : ℝ) b) x)
     (hFp : IntervalIntegrable (F p) volume (a : ℝ) b) :
     ∑ i ∈ Finset.Ioc a b, F 0 (i : ℝ) =
       (∫ t in (a : ℝ)..b, F 0 t) +
-        ∑ k ∈ Finset.range p,
-          ((-1 : ℝ) ^ (k + 1) * ((bernoulli (k + 1) : ℚ) : ℝ) / ((k + 1)! : ℝ)) •
-            (F k b - F k a) +
-        ((-1 : ℝ) ^ (p + 1) / p !) • ∫ t in (a : ℝ)..b, periodizedBernoulli p t • F p t := by
-  revert hF hFp
-  induction b, hab using Int.leInduction with
-  | base =>
-    intro _ _
-    simp
-  | succ b hb ih =>
-    intro hF hFp
-    have hab' : (a : ℝ) ≤ b := by exact_mod_cast hb
-    simp only [Int.cast_add, Int.cast_one] at hF hFp ⊢
-    have hsub1 : Set.Icc (a : ℝ) b ⊆ Set.Icc (a : ℝ) (b + 1) :=
-      Set.Icc_subset_Icc_right (by linarith)
-    have hsub2 : Set.Icc (b : ℝ) (b + 1) ⊆ Set.Icc (a : ℝ) (b + 1) :=
-      Set.Icc_subset_Icc_left hab'
-    have hmem : (b : ℝ) ∈ Set.uIcc (a : ℝ) (b + 1) := Set.mem_uIcc_of_le hab' (by linarith)
-    have hFp1 : IntervalIntegrable (F p) volume (a : ℝ) b :=
-      hFp.mono_set (Set.uIcc_subset_uIcc_left hmem)
-    have hFp2 : IntervalIntegrable (F p) volume (b : ℝ) (b + 1) :=
-      hFp.mono_set (Set.uIcc_subset_uIcc_right hmem)
-    have hc0 : ContinuousOn (F 0) (Set.Icc (a : ℝ) (b + 1)) := fun x hx ↦
-      (hF 0 (Nat.pos_of_ne_zero hp) x hx).continuousWithinAt
-    have hI1 : IntervalIntegrable (F 0) volume (a : ℝ) b :=
-      (hc0.mono hsub1).intervalIntegrable_of_Icc hab'
-    have hI2 : IntervalIntegrable (F 0) volume (b : ℝ) (b + 1) :=
-      (hc0.mono hsub2).intervalIntegrable_of_Icc (by linarith)
-    have ih' := ih (fun k hk x hx ↦ (hF k hk x (hsub1 hx)).mono hsub1) hFp1
-    have hunit := unit_formula hp (m := (b : ℝ))
-      (fun k hk x hx ↦ (hF k hk x (hsub2 hx)).mono hsub2) hFp2
-    rw [← integral_periodizedBernoulli_smul_intCast_add_one p (F p) b] at hunit
-    have hrem : ((-1 : ℝ) ^ (p + 1) / p !) •
-          ∫ t in (a : ℝ)..b + 1, periodizedBernoulli p t • F p t =
-        ((-1 : ℝ) ^ (p + 1) / p !) • (∫ t in (a : ℝ)..b, periodizedBernoulli p t • F p t) +
-        ((-1 : ℝ) ^ (p + 1) / p !) • ∫ t in (b : ℝ)..b + 1, periodizedBernoulli p t • F p t := by
-      rw [← smul_add, intervalIntegral.integral_add_adjacent_intervals
-        hFp1.periodizedBernoulli_smul hFp2.periodizedBernoulli_smul]
-    have hbd : ∑ k ∈ Finset.range p,
-          ((-1 : ℝ) ^ (k + 1) * ((bernoulli (k + 1) : ℚ) : ℝ) / ((k + 1)! : ℝ)) •
-            (F k (b + 1) - F k a) =
-        ∑ k ∈ Finset.range p,
-          ((-1 : ℝ) ^ (k + 1) * ((bernoulli (k + 1) : ℚ) : ℝ) / ((k + 1)! : ℝ)) •
-            (F k b - F k a) +
-        ∑ k ∈ Finset.range p,
-          ((-1 : ℝ) ^ (k + 1) * ((bernoulli (k + 1) : ℚ) : ℝ) / ((k + 1)! : ℝ)) •
-            (F k (b + 1) - F k b) := by
-      rw [← Finset.sum_add_distrib]
-      refine Finset.sum_congr rfl fun k _ ↦ ?_
-      rw [← smul_add]
-      congr 1
-      abel
-    rw [← Finset.insert_Ioc_right_eq_Ioc_add_one hb, Finset.sum_insert (by simp),
-      ← intervalIntegral.integral_add_adjacent_intervals hI1 hI2, hrem, hbd]
-    push_cast
-    linear_combination (norm := module) ih' + hunit
+        ∑ k ∈ Finset.range p, ((bernoulli' (k + 1) : ℝ) / ((k + 1)! : ℝ)) • (F k b - F k a) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in (a : ℝ)..b, periodizedBernoulli p t • F p t := by
+  have h := sum_Ioc_eq_integral_add_of_hasDerivWithinAt hp (a := (a : ℝ)) (b := (b : ℝ))
+    (by exact_mod_cast hab) hF hFp
+  simp only [Int.floor_intCast, periodizedBernoulli_intCast] at h
+  rw [sum_bernoulli'_smul_sub]
+  exact h
 
-/-- Regrouping the coefficients `(-1)^(k + 1) B_{k+1} / (k + 1)!`, `k < p`: since `B_n = 0` for odd
-`n ≥ 3`, only `k = 0`, with coefficient `1 / 2`, and the odd values `k = 2j + 1` survive, with
-coefficient `B_{2j + 2} / (2j + 2)!`. -/
+/-- **The Euler-Maclaurin summation formula** for integer end points and a `C^p` function.  Let
+`a ≤ b` be integers and `p ≥ 1`.  If `f` is `C^p` on `[a, b]`, then `∑ i ∈ Finset.Ioc a b, f i`
+equals
+$$\int_a^b f + \sum_{k < p} \frac{B'_{k + 1}}{(k + 1)!} (f^{(k)}(b) - f^{(k)}(a))
+  + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p f^{(p)},$$
+where `B'_n = bernoulli' n`, `P_p = periodizedBernoulli p` and the derivatives `f^(k)` are
+`iteratedDerivWithin` on `[a, b]`. -/
+theorem sum_Ioc_int_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : ℤ} (hab : a ≤ b)
+    (hf : ContDiffOn ℝ p f (Set.Icc (a : ℝ) b)) :
+    ∑ i ∈ Finset.Ioc a b, f (i : ℝ) =
+      (∫ t in (a : ℝ)..b, f t) +
+        ∑ k ∈ Finset.range p, ((bernoulli' (k + 1) : ℝ) / ((k + 1)! : ℝ)) •
+          (iteratedDerivWithin k f (Set.Icc (a : ℝ) b) b -
+            iteratedDerivWithin k f (Set.Icc (a : ℝ) b) a) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in (a : ℝ)..b,
+          periodizedBernoulli p t • iteratedDerivWithin p f (Set.Icc (a : ℝ) b) t := by
+  have h := sum_Ioc_eq_integral_add hp (a := (a : ℝ)) (b := (b : ℝ)) (by exact_mod_cast hab) hf
+  simp only [Int.floor_intCast, periodizedBernoulli_intCast] at h
+  rw [sum_bernoulli'_smul_sub]
+  exact h
+
+/-- Regrouping the coefficients `B'_{k+1} / (k + 1)!`, `k < p`: since `B'_1 = 1 / 2` and `B'_n = 0`
+for odd `n ≥ 3`, only `k = 0`, with coefficient `1 / 2`, and the odd values `k = 2j + 1` survive,
+with coefficient `B_{2j + 2} / (2j + 2)!`. -/
 private theorem sum_range_split {G : Type*} [AddCommGroup G] [Module ℝ G] {p : ℕ} (hp : p ≠ 0)
     (c : ℕ → G) :
-    ∑ k ∈ Finset.range p,
-        ((-1 : ℝ) ^ (k + 1) * ((bernoulli (k + 1) : ℚ) : ℝ) / ((k + 1)! : ℝ)) • c k =
+    ∑ k ∈ Finset.range p, ((bernoulli' (k + 1) : ℝ) / ((k + 1)! : ℝ)) • c k =
       (1 / 2 : ℝ) • c 0 + ∑ j ∈ Finset.range (p / 2),
-        (((bernoulli (2 * j + 2) : ℚ) : ℝ) / ((2 * j + 2)! : ℝ)) • c (2 * j + 1) := by
+        ((bernoulli (2 * j + 2) : ℝ) / ((2 * j + 2)! : ℝ)) • c (2 * j + 1) := by
   have hp1 : 1 ≤ p := Nat.one_le_iff_ne_zero.mpr hp
   induction p, hp1 using Nat.le_induction with
   | base =>
-    norm_num [bernoulli_one]
+    norm_num [bernoulli'_one]
   | succ p hp ih =>
     rw [Finset.sum_range_succ, ih (by omega)]
     obtain ⟨r, rfl | rfl⟩ := Nat.even_or_odd' p
-    · have hodd : bernoulli (2 * r + 1) = 0 :=
-        bernoulli_eq_zero_of_odd ⟨r, rfl⟩ (by omega)
+    · have hodd : bernoulli' (2 * r + 1) = 0 :=
+        bernoulli'_eq_zero_of_odd ⟨r, rfl⟩ (by omega)
       have hdiv : (2 * r + 1) / 2 = 2 * r / 2 := by omega
       rw [hdiv]
       simp [hodd]
     · have h1 : (2 * r + 1 + 1) / 2 = r + 1 := by omega
       have h2 : (2 * r + 1) / 2 = r := by omega
       have h3 : 2 * r + 1 + 1 = 2 * r + 2 := rfl
-      have h5 : (-1 : ℝ) ^ (2 * r + 1 + 1) = 1 := Even.neg_one_pow ⟨r + 1, by ring⟩
-      rw [h1, h2, Finset.sum_range_succ, h5, h3]
+      rw [h1, h2, Finset.sum_range_succ, h3,
+        ← bernoulli_eq_bernoulli'_of_ne_one (by omega : 2 * r + 2 ≠ 1)]
       module
 
-/-- **The Euler-Maclaurin summation formula over `Finset.Icc`**, for a family `F : ℕ → ℝ → E` of
-successive derivatives.  Let `a ≤ b` be integers, `p ≥ 1`, and suppose that for `k < p` the function
-`F k` has derivative `F (k + 1)` within `[a, b]`, and that `F p` is interval integrable on
-`[a, b]`.  Then `∑ i ∈ Finset.Icc a b, F 0 i` equals
-$$\int_a^b F_0 + \frac{F_0(a) + F_0(b)}{2}
-  + \sum_{j < \lfloor p / 2 \rfloor} \frac{B_{2j + 2}}{(2j + 2)!} (F_{2j + 1}(b) - F_{2j + 1}(a))
-  + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p F_p,$$
-where `P_p = periodizedBernoulli p`.  It is `sum_Ioc_eq_integral_add_of_hasDerivWithinAt` with the
-boundary terms regrouped. -/
-theorem sum_Icc_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E}
-    {a b : ℤ} (hab : a ≤ b)
-    (hF : ∀ k < p, ∀ x ∈ Set.Icc (a : ℝ) b,
-      HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc (a : ℝ) b) x)
-    (hFp : IntervalIntegrable (F p) volume (a : ℝ) b) :
-    ∑ i ∈ Finset.Icc a b, F 0 (i : ℝ) =
-      (∫ t in (a : ℝ)..b, F 0 t) + (1 / 2 : ℝ) • (F 0 a + F 0 b) +
-        ∑ j ∈ Finset.range (p / 2), (((bernoulli (2 * j + 2) : ℚ) : ℝ) / ((2 * j + 2)! : ℝ)) •
-          (F (2 * j + 1) b - F (2 * j + 1) a) +
-        ((-1 : ℝ) ^ (p + 1) / p !) • ∫ t in (a : ℝ)..b, periodizedBernoulli p t • F p t := by
-  have h := sum_Ioc_eq_integral_add_of_hasDerivWithinAt hp hab hF hFp
-  rw [sum_range_split hp (fun k ↦ F k b - F k a)] at h
-  rw [Finset.Icc_eq_cons_Ioc hab, Finset.sum_cons]
-  linear_combination (norm := module) h
-
-/-- **The Euler-Maclaurin summation formula over `Finset.Ioc`** for a `C^p` function.  Let
-`a ≤ b` be integers and `p ≥ 1`.  If `f` is `C^p` on `[a, b]`, then `∑ i ∈ Finset.Ioc a b, f i`
-equals
-$$\int_a^b f + \sum_{k < p} \frac{(-1)^{k + 1} B_{k + 1}}{(k + 1)!} (f^{(k)}(b) - f^{(k)}(a))
-  + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p f^{(p)},$$
-where `P_p = periodizedBernoulli p` and the derivatives `f^(k)` are `iteratedDerivWithin` on
-`[a, b]`. -/
-theorem sum_Ioc_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : ℤ} (hab : a ≤ b)
-    (hf : ContDiffOn ℝ p f (Set.Icc (a : ℝ) b)) :
-    ∑ i ∈ Finset.Ioc a b, f (i : ℝ) =
-      (∫ t in (a : ℝ)..b, f t) +
-        ∑ k ∈ Finset.range p,
-          ((-1 : ℝ) ^ (k + 1) * ((bernoulli (k + 1) : ℚ) : ℝ) / ((k + 1)! : ℝ)) •
-            (iteratedDerivWithin k f (Set.Icc (a : ℝ) b) b -
-              iteratedDerivWithin k f (Set.Icc (a : ℝ) b) a) +
-        ((-1 : ℝ) ^ (p + 1) / p !) • ∫ t in (a : ℝ)..b,
-          periodizedBernoulli p t • iteratedDerivWithin p f (Set.Icc (a : ℝ) b) t := by
-  rcases hab.eq_or_lt with rfl | hlt
-  · simp
-  · have hU : UniqueDiffOn ℝ (Set.Icc (a : ℝ) b) := uniqueDiffOn_Icc (by exact_mod_cast hlt)
-    have h := sum_Ioc_eq_integral_add_of_hasDerivWithinAt
-      (F := fun k ↦ iteratedDerivWithin k f (Set.Icc (a : ℝ) b)) hp hab
-      (fun k hk x hx ↦ by
-        rw [iteratedDerivWithin_succ]
-        exact ((hf.differentiableOn_iteratedDerivWithin (by exact_mod_cast hk) hU) x hx
-          ).hasDerivWithinAt)
-      ((hf.continuousOn_iteratedDerivWithin le_rfl hU).intervalIntegrable_of_Icc
-        (by exact_mod_cast hab))
-    simpa only [iteratedDerivWithin_zero] using h
-
-/-- **The Euler-Maclaurin summation formula over `Finset.Icc`** for a `C^p` function.  Let
-`a ≤ b` be integers and `p ≥ 1`.  If `f` is `C^p` on `[a, b]`, then `∑ i ∈ Finset.Icc a b, f i`
-equals
+/-- **The Euler-Maclaurin summation formula over `Finset.Icc`** for integer end points and a `C^p`
+function.  Let `a ≤ b` be integers and `p ≥ 1`.  If `f` is `C^p` on `[a, b]`, then
+`∑ i ∈ Finset.Icc a b, f i` equals
 $$\int_a^b f + \frac{f(a) + f(b)}{2}
   + \sum_{j < \lfloor p / 2 \rfloor} \frac{B_{2j + 2}}{(2j + 2)!}
     (f^{(2j + 1)}(b) - f^{(2j + 1)}(a))
   + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p f^{(p)},$$
 where `P_p = periodizedBernoulli p` and the derivatives `f^(k)` are `iteratedDerivWithin` on
 `[a, b]`. -/
-theorem sum_Icc_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : ℤ} (hab : a ≤ b)
+theorem sum_Icc_int_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : ℤ} (hab : a ≤ b)
     (hf : ContDiffOn ℝ p f (Set.Icc (a : ℝ) b)) :
     ∑ i ∈ Finset.Icc a b, f (i : ℝ) =
       (∫ t in (a : ℝ)..b, f t) + (1 / 2 : ℝ) • (f a + f b) +
-        ∑ j ∈ Finset.range (p / 2), (((bernoulli (2 * j + 2) : ℚ) : ℝ) / ((2 * j + 2)! : ℝ)) •
+        ∑ j ∈ Finset.range (p / 2), ((bernoulli (2 * j + 2) : ℝ) / ((2 * j + 2)! : ℝ)) •
           (iteratedDerivWithin (2 * j + 1) f (Set.Icc (a : ℝ) b) b -
             iteratedDerivWithin (2 * j + 1) f (Set.Icc (a : ℝ) b) a) +
-        ((-1 : ℝ) ^ (p + 1) / p !) • ∫ t in (a : ℝ)..b,
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in (a : ℝ)..b,
           periodizedBernoulli p t • iteratedDerivWithin p f (Set.Icc (a : ℝ) b) t := by
-  have h := sum_Ioc_eq_integral_add hp hab hf
+  have h := sum_Ioc_int_eq_integral_add hp hab hf
   rw [sum_range_split hp (fun k ↦ iteratedDerivWithin k f (Set.Icc (a : ℝ) b) b -
     iteratedDerivWithin k f (Set.Icc (a : ℝ) b) a)] at h
   simp only [iteratedDerivWithin_zero] at h
   rw [Finset.Icc_eq_cons_Ioc hab, Finset.sum_cons]
   linear_combination (norm := module) h
 
-/-- **The Euler-Maclaurin summation formula** for a sum over natural numbers: the case of
-`EulerMaclaurin.sum_Icc_eq_integral_add` with end points `a ≤ b` in `ℕ`. -/
+/-- **The Euler-Maclaurin summation formula over `Finset.Icc`** for end points in `ℕ` and a `C^p`
+function: the case of `EulerMaclaurin.sum_Icc_int_eq_integral_add` with end points `a ≤ b` in
+`ℕ`. -/
 theorem sum_Icc_nat_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a b : ℕ} (hab : a ≤ b)
     (hf : ContDiffOn ℝ p f (Set.Icc (a : ℝ) b)) :
     ∑ i ∈ Finset.Icc a b, f (i : ℝ) =
       (∫ t in (a : ℝ)..b, f t) + (1 / 2 : ℝ) • (f a + f b) +
-        ∑ j ∈ Finset.range (p / 2), (((bernoulli (2 * j + 2) : ℚ) : ℝ) / ((2 * j + 2)! : ℝ)) •
+        ∑ j ∈ Finset.range (p / 2), ((bernoulli (2 * j + 2) : ℝ) / ((2 * j + 2)! : ℝ)) •
           (iteratedDerivWithin (2 * j + 1) f (Set.Icc (a : ℝ) b) b -
             iteratedDerivWithin (2 * j + 1) f (Set.Icc (a : ℝ) b) a) +
-        ((-1 : ℝ) ^ (p + 1) / p !) • ∫ t in (a : ℝ)..b,
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in (a : ℝ)..b,
           periodizedBernoulli p t • iteratedDerivWithin p f (Set.Icc (a : ℝ) b) t := by
-  have h := sum_Icc_eq_integral_add hp (a := (a : ℤ)) (b := (b : ℤ)) (by exact_mod_cast hab)
+  have h := sum_Icc_int_eq_integral_add hp (a := (a : ℤ)) (b := (b : ℤ)) (by exact_mod_cast hab)
     (by simpa only [Int.cast_natCast] using hf)
   simp only [Int.cast_natCast] at h
   have himage : Finset.Icc (a : ℤ) b = (Finset.Icc a b).image (Nat.cast : ℕ → ℤ) := by
-    ext x
-    simp only [Finset.mem_Icc, Finset.mem_image]
-    constructor
-    · rintro ⟨h1, h2⟩
-      exact ⟨x.toNat, ⟨by omega, by omega⟩, by omega⟩
-    · rintro ⟨y, ⟨h1, h2⟩, rfl⟩
-      exact ⟨by exact_mod_cast h1, by exact_mod_cast h2⟩
+    refine Finset.coe_injective ?_
+    rw [Finset.coe_image, Finset.coe_Icc, Finset.coe_Icc, Nat.image_cast_int_Icc]
   rw [himage, Finset.sum_image (fun x _ y _ hxy ↦ by exact_mod_cast hxy)] at h
   simpa only [Int.cast_natCast] using h
 

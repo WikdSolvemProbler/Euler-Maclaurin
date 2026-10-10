@@ -18,6 +18,9 @@ that the conclusions are nondegenerate:
   derivatives, where the remainder vanishes.
 * The formula of order $2$ for the exponential function on $[0, n]$, stated with the integral, the
   boundary terms and the remainder integral written out.
+* The case $p = 1$ for real end points, which is the first order formula
+  $\sum_{a < n \le b} f(n) = f(a) B_1(a) - f(b) B_1(b) + \int_a^b f + \int_a^b f' B_1$ with
+  $B_1(x) = x - \lfloor x \rfloor - 1/2$.
 * The remainder integral of order $1$ of a constant function is a nonzero number.
 * The remainder bounds and the bounds for the Bernoulli polynomials are concrete inequalities.
 -/
@@ -29,7 +32,7 @@ open EulerMaclaurin MeasureTheory
 open scoped Nat
 
 /-- The derivatives of `t ↦ t ^ 2`: `t ^ 2`, `2 * t`, `2` and then `0`. -/
-@[expose] noncomputable def sqFamily : ℕ → ℝ → ℝ
+noncomputable def sqFamily : ℕ → ℝ → ℝ
   | 0 => fun t ↦ t ^ 2
   | 1 => fun t ↦ 2 * t
   | 2 => fun _ ↦ 2
@@ -42,11 +45,11 @@ theorem hasDerivAt_sqFamily {k : ℕ} (hk : k < 3) (x : ℝ) :
   · simpa [sqFamily] using (hasDerivAt_id x).const_mul (2 : ℝ)
   · simpa [sqFamily] using hasDerivAt_const x (2 : ℝ)
 
-/-- **Faulhaber's formula** `∑_{i = 0}^{n} i ^ 2 = n ^ 3 / 3 + n ^ 2 / 2 + n / 6` is the formula
+/-- **Faulhaber's formula** `∑_{i = 1}^{n} i ^ 2 = n ^ 3 / 3 + n ^ 2 / 2 + n / 6` is the formula
 of order `3` for `t ↦ t ^ 2`, whose remainder integral is zero. -/
 example (n : ℕ) :
-    ∑ i ∈ Finset.Icc (0 : ℤ) n, (i : ℝ) ^ 2 = (n : ℝ) ^ 3 / 3 + (n : ℝ) ^ 2 / 2 + n / 6 := by
-  have h := sum_Icc_eq_integral_add_of_hasDerivWithinAt (p := 3) (F := sqFamily) (a := 0)
+    ∑ i ∈ Finset.Ioc (0 : ℤ) n, (i : ℝ) ^ 2 = (n : ℝ) ^ 3 / 3 + (n : ℝ) ^ 2 / 2 + n / 6 := by
+  have h := sum_Ioc_int_eq_integral_add_of_hasDerivWithinAt (p := 3) (F := sqFamily) (a := 0)
     (b := n) (by norm_num) (Int.natCast_nonneg n)
     (fun k hk x _ ↦ (hasDerivAt_sqFamily hk x).hasDerivWithinAt)
     (by simp [sqFamily])
@@ -55,11 +58,10 @@ example (n : ℕ) :
     simp [sqFamily]
   have hint : (∫ t in ((0 : ℤ) : ℝ)..((n : ℤ) : ℝ), sqFamily 0 t) = (n : ℝ) ^ 3 / 3 := by
     norm_num [sqFamily, integral_pow]
-  have hsum : ∑ j ∈ Finset.range (3 / 2),
-      (((bernoulli (2 * j + 2) : ℚ) : ℝ) / ((2 * j + 2)! : ℝ)) •
-        (sqFamily (2 * j + 1) ((n : ℤ) : ℝ) - sqFamily (2 * j + 1) ((0 : ℤ) : ℝ)) =
-      (n : ℝ) / 6 := by
-    norm_num [Finset.sum_range_succ, bernoulli_two, Nat.factorial, sqFamily]
+  have hsum : ∑ k ∈ Finset.range 3, ((bernoulli' (k + 1) : ℝ) / ((k + 1)! : ℝ)) •
+        (sqFamily k ((n : ℤ) : ℝ) - sqFamily k ((0 : ℤ) : ℝ)) = (n : ℝ) ^ 2 / 2 + n / 6 := by
+    norm_num [Finset.sum_range_succ, bernoulli'_one, bernoulli'_two, bernoulli'_three,
+      Nat.factorial, sqFamily]
     ring
   rw [hrem, hint, hsum] at h
   simp only [sqFamily, smul_eq_mul] at h
@@ -69,7 +71,8 @@ example (n : ℕ) :
 /-- The formula of order `2` for the exponential function on `[0, n]`, with the integral, the
 boundary terms and the remainder integral written out.  Here `B_2 / 2! = 1 / 12`, the first
 derivative of the exponential is itself, and the coefficient of the remainder is
-`(-1) ^ 3 / 2! = -1 / 2`. -/
+`(-1) ^ 3 / 2! = -1 / 2`.  The hypothesis `0 < n` is used only to compute `iteratedDerivWithin`
+on a nondegenerate interval. -/
 example (n : ℕ) (hn : 0 < n) :
     ∑ i ∈ Finset.Icc 0 n, Real.exp i =
       (Real.exp n - 1) + (1 + Real.exp n) / 2 + (Real.exp n - 1) / 12 +
@@ -90,7 +93,7 @@ example (n : ℕ) (hn : 0 < n) :
     rw [Set.uIcc_of_le hn0] at ht
     simp only [smul_eq_mul, hder 2 t ht]
   have hsum : ∑ j ∈ Finset.range (2 / 2),
-      (((bernoulli (2 * j + 2) : ℚ) : ℝ) / ((2 * j + 2)! : ℝ)) •
+      ((bernoulli (2 * j + 2) : ℝ) / ((2 * j + 2)! : ℝ)) •
         (iteratedDerivWithin (2 * j + 1) Real.exp (Set.Icc (0 : ℝ) n) n -
           iteratedDerivWithin (2 * j + 1) Real.exp (Set.Icc (0 : ℝ) n) 0) =
       (Real.exp n - 1) / 12 := by
@@ -103,6 +106,36 @@ example (n : ℕ) (hn : 0 < n) :
   have hc : ((-1 : ℝ) ^ (2 + 1) / (2 ! : ℝ)) = -1 / 2 := by norm_num [Nat.factorial]
   rw [hsum, hint, hc, integral_exp] at h
   simp only [Real.exp_zero, smul_eq_mul] at h
+  linarith
+
+/-- The first order formula, for real end points `0 ≤ a ≤ b` and a function which is differentiable
+on `[a, b]` with continuous derivative: it is the case `p = 1` of
+`EulerMaclaurin.sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt`, with `B₁ x = x - ⌊x⌋₊ - 1 / 2`
+the periodic Bernoulli function of order `1` on the nonnegative reals. -/
+example {f : ℝ → ℝ} {a b : ℝ} (ha : 0 ≤ a) (hab : a ≤ b)
+    (hf : ∀ t ∈ Set.Icc a b, DifferentiableAt ℝ f t)
+    (hf' : ContinuousOn (deriv f) (Set.uIcc a b)) :
+    ∑ k ∈ Finset.Ioc ⌊a⌋₊ ⌊b⌋₊, f k =
+      f a * (a - ⌊a⌋₊ - 1 / 2) - f b * (b - ⌊b⌋₊ - 1 / 2) + (∫ t in a..b, f t) +
+        ∫ t in a..b, deriv f t * (t - ⌊t⌋₊ - 1 / 2) := by
+  have hB : ∀ t : ℝ, 0 ≤ t → periodizedBernoulli 1 t = t - ⌊t⌋₊ - 1 / 2 := fun t ht ↦ by
+    rw [periodizedBernoulli_coe, bernoulliFun_one, ← Int.self_sub_floor,
+      ← Int.natCast_floor_eq_floor ht, Int.cast_natCast]
+  have h := sum_Ioc_nat_eq_integral_add_of_hasDerivWithinAt (p := 1)
+    (F := fun k ↦ if k = 0 then f else deriv f) one_ne_zero ha hab
+    (fun k hk x hx ↦ by
+      obtain rfl : k = 0 := by omega
+      simpa using (hf x hx).hasDerivAt.hasDerivWithinAt)
+    (by simpa using hf'.intervalIntegrable)
+  have hint : (∫ t in a..b, periodizedBernoulli 1 t • deriv f t) =
+      ∫ t in a..b, deriv f t * (t - ⌊t⌋₊ - 1 / 2) := by
+    refine intervalIntegral.integral_congr fun t ht ↦ ?_
+    rw [Set.uIcc_of_le hab] at ht
+    simp only [smul_eq_mul, hB t (ha.trans ht.1)]
+    ring
+  simp only [Finset.sum_range_one, zero_add, ite_true, one_ne_zero, ite_false] at h
+  rw [hB a ha, hB b (ha.trans hab), hint] at h
+  norm_num at h
   linarith
 
 /-- The remainder integral of order `1` of the constant function `1` on `[0, 1 / 2]` is `-1 / 8`,
@@ -142,8 +175,8 @@ example : |bernoulliFun 1 (0 : ℝ)| ≤ 4 * (1 ! : ℝ) / 6 ^ 1 :=
   abs_bernoulliFun_le_four_mul_factorial_div_six_pow 1 ⟨le_rfl, zero_le_one⟩
 
 /-- The sharp bound in even degree is attained at `0`, so it cannot be improved. -/
-example : |bernoulliFun (2 * 1) (0 : ℝ)| = |((bernoulli (2 * 1) : ℚ) : ℝ)| := by
+example : |bernoulliFun (2 * 1) (0 : ℝ)| = |(bernoulli (2 * 1) : ℝ)| := by
   rw [bernoulliFun_eval_zero]
 
-example : |bernoulliFun (2 * 1) (1 / 2 : ℝ)| ≤ |((bernoulli (2 * 1) : ℚ) : ℝ)| :=
+example : |bernoulliFun (2 * 1) (1 / 2 : ℝ)| ≤ |(bernoulli (2 * 1) : ℝ)| :=
   abs_bernoulliFun_two_mul_le_abs_bernoulli 1 ⟨by norm_num, by norm_num⟩

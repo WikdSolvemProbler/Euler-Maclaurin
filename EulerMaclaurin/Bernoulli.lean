@@ -5,10 +5,6 @@ Authors: Peter Shiller
 -/
 module
 
-public import Mathlib.Analysis.Calculus.Deriv.Shift
-public import Mathlib.Analysis.Real.Pi.Bounds
-public import Mathlib.MeasureTheory.Function.Floor
-public import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 public import Mathlib.NumberTheory.ZetaValues
 
 /-!
@@ -24,11 +20,8 @@ functions, which this file proves.
 Taking norms termwise in Mathlib's Fourier expansion of $B_k$ on $[0, 1]$
 (`hasSum_one_div_nat_pow_mul_fourier`) gives, for $k \ge 2$ and $x \in [0, 1]$,
 $$|B_k(x)| \le \frac{2 \, k!}{(2 \pi)^k} \sum_{n \ge 1} \frac{1}{n^k}.$$
-The series is at most $\zeta(2) = \pi^2 / 6 < 2$, and $2 \pi > 6$, so
-$$|B_k(x)| \le \frac{4 \, k!}{6^k},$$
-a rational bound which also holds for $k = 0$ and $k = 1$ (checked directly).  For $k = 2m$ the
-series is evaluated by `hasSum_zeta_nat`, and the constant becomes the Bernoulli number:
-$|B_{2m}(x)| \le |B_{2m}|$ for $x \in [0, 1]$, with equality at $x = 0$.
+For $k = 2m$ the series is evaluated by `hasSum_zeta_nat`, and the constant becomes the Bernoulli
+number: $|B_{2m}(x)| \le |B_{2m}|$ for $x \in [0, 1]$, with equality at $x = 0$.
 
 ## Periodization
 
@@ -36,9 +29,9 @@ The periodic function on the real line is the composite of `periodizedBernoulli 
 quotient map $\mathbb{R} \to \mathbb{R} / \mathbb{Z}$, which is a coercion in Lean:
 $$P_k(x) = B_k(\{x\}),$$
 where $\{x\}$ is the fractional part (`periodizedBernoulli_coe`).  This gives its value on
-$[m, m + 1)$ for an integer $m$, its measurability (also for $k = 1$, where it has jumps at the
-integers), its bound, and the interval integrability of its product with an interval integrable
-function.
+$[m, m + 1)$ for an integer $m$, its value at the integers, its measurability (also for $k = 1$,
+where it has jumps at the integers), and the interval integrability of its product with an
+interval integrable function.
 
 ## Integration by parts
 
@@ -52,23 +45,19 @@ that raises the order in the Euler-Maclaurin formula.
 
 * `abs_bernoulliFun_le`: $|B_k(x)| \le 2 \, k! \, (\sum_{n \ge 1} n^{-k}) / (2 \pi)^k$ for
   $2 \le k$ and $x \in [0, 1]$.
-* `abs_bernoulliFun_le_four_mul_factorial_div_six_pow`: the rational bound $4 \, k! / 6^k$.
 * `abs_bernoulliFun_two_mul_le_abs_bernoulli`: the sharp bound $|B_{2m}(x)| \le |B_{2m}|$.
 * `periodizedBernoulli_coe`: $P_k(x) = B_k(\{x\})$.
 * `periodizedBernoulli_coe_of_mem_Ico_intCast`: $P_k(x) = B_k(x - m)$ for $x \in [m, m + 1)$.
-* `abs_periodizedBernoulli_le_four_mul_factorial_div_six_pow`: the rational bound for $P_k$.
-* `measurable_periodizedBernoulli_coe`: measurability of $P_k$ on $\mathbb{R}$.
+* `periodizedBernoulli_intCast`: $P_k(m) = B_k$ for an integer $m$.
+* `measurable_periodizedBernoulli`: measurability of $P_k$ on the circle.
 * `IntervalIntegrable.periodizedBernoulli_smul`: $P_k g$ is interval integrable if $g$ is.
 * `integral_bernoulliFun_comp_sub_right_smul`: integration by parts against $B_n(t - c)$.
 
 ## Implementation notes
 
 The file does not use the Riemann zeta function `riemannZeta`: the series $\sum 1 / n^k$ and
-`hasSum_zeta_nat` suffice, so no import of `Mathlib.NumberTheory.LSeries.RiemannZeta` is needed.
-A form of `abs_bernoulliFun_le` with `riemannZeta k` is a one-line consequence, and belongs in
-`Mathlib/NumberTheory/LSeries/HurwitzZetaValues.lean`.
-
-This file is meant for Mathlib as an extension of `Mathlib/NumberTheory/ZetaValues.lean`.
+`hasSum_zeta_nat` suffice.  A form of `abs_bernoulliFun_le` with `riemannZeta k` in place of the
+series is a one-line consequence.
 
 ## Tags
 
@@ -80,15 +69,6 @@ public section
 open Complex MeasureTheory
 
 open scoped Nat Real
-
-/-- The series `∑ 1 / n ^ k` is dominated by `ζ(2) = π ^ 2 / 6` for `k ≥ 2`. -/
-private theorem tsum_one_div_nat_pow_le {k : ℕ} (hk : 2 ≤ k) :
-    ∑' n : ℕ, 1 / (n : ℝ) ^ k ≤ π ^ 2 / 6 := by
-  refine hasSum_le (fun n ↦ ?_) (Real.summable_one_div_nat_pow.mpr (by omega : 1 < k)).hasSum
-    hasSum_zeta_two
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · simp [zero_pow (show k ≠ 0 by omega)]
-  · exact one_div_le_one_div_of_le (by positivity) (pow_le_pow_right₀ (by exact_mod_cast hn) hk)
 
 /-- **Explicit bound for the Bernoulli polynomials.**  For `k ≥ 2` and `x ∈ [0, 1]`,
 `|B_k(x)| ≤ 2 * (∑ n ≥ 1, 1 / n ^ k) * k! / (2 π) ^ k`.  The proof takes norms termwise in the
@@ -118,34 +98,6 @@ theorem abs_bernoulliFun_le {k : ℕ} (hk : 2 ≤ k) {x : ℝ} (hx : x ∈ Set.I
   rw [hval, div_le_iff₀ (by positivity)] at hnorm
   rw [le_div_iff₀ (by positivity)]
   linarith
-
-/-- **Rational bound for the Bernoulli polynomials.**  For every `k` and `x ∈ [0, 1]`,
-`|B_k(x)| ≤ 4 * k! / 6 ^ k`.  No transcendental constant occurs, which is convenient for certified
-numerical estimates.  For `k ≥ 2` it follows from `abs_bernoulliFun_le` since the series is at most
-`π ^ 2 / 6 < 2` and `6 < 2 π`; the cases `k = 0` and `k = 1` are direct. -/
-theorem abs_bernoulliFun_le_four_mul_factorial_div_six_pow (k : ℕ) {x : ℝ}
-    (hx : x ∈ Set.Icc (0 : ℝ) 1) : |bernoulliFun k x| ≤ 4 * k ! / 6 ^ k := by
-  rcases Nat.lt_or_ge k 2 with hk | hk
-  · obtain rfl | rfl : k = 0 ∨ k = 1 := by omega
-    · calc |bernoulliFun 0 x| = 1 := by simp
-        _ ≤ 4 * (0 ! : ℝ) / 6 ^ 0 := by norm_num
-    · have h : |x - 1 / 2| ≤ 1 / 2 := by
-        rw [abs_le]
-        constructor <;> linarith [hx.1, hx.2]
-      calc |bernoulliFun 1 x| = |x - 1 / 2| := by rw [bernoulliFun_one]
-        _ ≤ 1 / 2 := h
-        _ ≤ 4 * (1 ! : ℝ) / 6 ^ 1 := by norm_num
-  · refine (abs_bernoulliFun_le hk hx).trans ?_
-    have hπ : π ^ 2 < 12 :=
-      calc π ^ 2 < 3.15 ^ 2 := pow_lt_pow_left₀ Real.pi_lt_d2 Real.pi_pos.le two_ne_zero
-        _ < 12 := by norm_num
-    have h2 : 2 * (∑' n : ℕ, 1 / (n : ℝ) ^ k) ≤ 4 := by
-      linarith [tsum_one_div_nat_pow_le hk]
-    have h6 : (6 : ℝ) ^ k ≤ (2 * π) ^ k :=
-      pow_le_pow_left₀ (by norm_num) (by linarith [Real.pi_gt_three]) k
-    calc 2 * (∑' n : ℕ, 1 / (n : ℝ) ^ k) * k ! / (2 * π) ^ k ≤ 4 * k ! / (2 * π) ^ k := by
-          gcongr
-      _ ≤ 4 * k ! / 6 ^ k := by gcongr
 
 /-- **Sharp bound in even degree.**  For every `m` and `x ∈ [0, 1]`,
 `|B_{2m}(x)| ≤ |B_{2m}|`, where the right-hand side is the Bernoulli number.  The bound is attained
@@ -178,11 +130,9 @@ fractional part of `x`.  This is the bridge between `periodizedBernoulli`, defin
 circle, and the periodic function on `ℝ`. -/
 theorem periodizedBernoulli_coe (k : ℕ) (x : ℝ) :
     periodizedBernoulli k x = bernoulliFun k (Int.fract x) := by
-  rw [periodizedBernoulli, ← AddCircle.coe_fract x,
-    AddCircle.liftIco_coe_apply (a := (0 : ℝ)) (p := (1 : ℝ))
-      (show Int.fract x ∈ Set.Ico (0 : ℝ) (0 + 1) by
-        rw [zero_add]
-        exact ⟨Int.fract_nonneg x, Int.fract_lt_one x⟩)]
+  rw [← AddCircle.coe_fract x]
+  exact AddCircle.liftIco_zero_coe_apply
+    (show Int.fract x ∈ Set.Ico (0 : ℝ) 1 from ⟨Int.fract_nonneg x, Int.fract_lt_one x⟩)
 
 /-- On `[m, m + 1)`, for an integer `m`, the periodized Bernoulli polynomial is the translate
 `x ↦ bernoulliFun k (x - m)` of the Bernoulli polynomial. -/
@@ -191,27 +141,17 @@ theorem periodizedBernoulli_coe_of_mem_Ico_intCast {k : ℕ} {m : ℤ} {x : ℝ}
   rw [periodizedBernoulli_coe, ← Int.self_sub_floor, Int.floor_eq_iff.2 ⟨hx.1, hx.2⟩]
 
 /-- At an integer, the periodized Bernoulli polynomial is the Bernoulli number. -/
+@[simp]
 theorem periodizedBernoulli_intCast (k : ℕ) (m : ℤ) :
     periodizedBernoulli k (m : ℝ) = bernoulli k := by
   rw [periodizedBernoulli_coe, Int.fract_intCast, bernoulliFun_eval_zero]
 
-/-- **Rational bound for the periodized Bernoulli polynomial**, on the whole circle, from
-`abs_bernoulliFun_le_four_mul_factorial_div_six_pow`. -/
-theorem abs_periodizedBernoulli_le_four_mul_factorial_div_six_pow (k : ℕ) (y : UnitAddCircle) :
-    |periodizedBernoulli k y| ≤ 4 * k ! / 6 ^ k := by
-  obtain ⟨x, rfl⟩ := QuotientAddGroup.mk_surjective y
-  rw [periodizedBernoulli_coe]
-  exact abs_bernoulliFun_le_four_mul_factorial_div_six_pow k
-    ⟨Int.fract_nonneg x, (Int.fract_lt_one x).le⟩
-
-/-- The periodized Bernoulli polynomial, as a function on `ℝ`, is measurable for every `k`,
-including `k = 1`, where it jumps at every integer. -/
-theorem measurable_periodizedBernoulli_coe (k : ℕ) :
-    Measurable fun x : ℝ ↦ periodizedBernoulli k x := by
-  have h : (fun x : ℝ ↦ periodizedBernoulli k x) = bernoulliFun k ∘ Int.fract :=
-    funext (periodizedBernoulli_coe k)
-  rw [h]
-  exact (continuous_bernoulliFun k).measurable.comp measurable_fract
+/-- The periodized Bernoulli polynomial is measurable on the circle for every `k`, including
+`k = 1`, where it jumps at the origin. -/
+theorem measurable_periodizedBernoulli (k : ℕ) : Measurable (periodizedBernoulli k) := by
+  have h : Measurable fun x : Set.Ico (0 : ℝ) (0 + 1) ↦ bernoulliFun k x :=
+    (continuous_bernoulliFun k).measurable.comp measurable_subtype_coe
+  exact h.comp (AddCircle.measurableEquivIco 1 0).measurable
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
@@ -221,10 +161,15 @@ and bounded. -/
 theorem IntervalIntegrable.periodizedBernoulli_smul {k : ℕ} {g : ℝ → E} {a b : ℝ}
     (hg : IntervalIntegrable g volume a b) :
     IntervalIntegrable (fun t : ℝ ↦ periodizedBernoulli k t • g t) volume a b := by
+  obtain ⟨C, hC⟩ := (isCompact_Icc (a := (0 : ℝ)) (b := 1)).exists_bound_of_continuousOn
+    (continuous_bernoulliFun k).continuousOn
+  have hmeas : Measurable fun x : ℝ ↦ periodizedBernoulli k (x : UnitAddCircle) :=
+    (measurable_periodizedBernoulli k).comp (AddCircle.measurable_mk' (a := 1))
+  have hbound : ∀ x : ℝ, ‖periodizedBernoulli k (x : UnitAddCircle)‖ ≤ C := fun x ↦ by
+    rw [periodizedBernoulli_coe]
+    exact hC _ ⟨Int.fract_nonneg x, (Int.fract_lt_one x).le⟩
   rw [intervalIntegrable_iff] at hg ⊢
-  exact hg.bdd_smul (4 * k ! / 6 ^ k) (measurable_periodizedBernoulli_coe k).aestronglyMeasurable
-    (Filter.Eventually.of_forall fun x ↦ (Real.norm_eq_abs _).trans_le
-      (abs_periodizedBernoulli_le_four_mul_factorial_div_six_pow k x))
+  exact hg.bdd_smul C hmeas.aestronglyMeasurable (Filter.Eventually.of_forall hbound)
 
 variable [CompleteSpace E]
 
