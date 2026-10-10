@@ -41,10 +41,14 @@ This file is meant for Mathlib as `Mathlib/NumberTheory/EulerMaclaurin.lean`.
   `F : ℕ → ℝ → E` of successive derivatives, where `F (k + 1)` is a derivative of `F k` within
   `[a, b]` for `k < p` and `F p` is only interval integrable.  Closed forms for the derivatives
   can be used directly, and the `C^p` version above is a corollary.
+* `EulerMaclaurin.sum_Icc_nat_eq_integral_add`: the `C^p` version with end points in `ℕ`.
 * `EulerMaclaurin.integral_bernoulliFun_sub_smul`: integration by parts for a Bernoulli
   polynomial on a unit interval, the step that drives the induction on the order.
 
 ## Implementation notes
+
+The order `p` must be positive: the term `(f a + f b) / 2` comes from the integration by parts that
+raises the order from `0` to `1`.  Every order `p ≥ 1` is covered, odd and even.
 
 The proof integrates by parts on one unit interval `[m, m + 1]` against the polynomial
 `t ↦ B_{k + 1}(t - m) / (k + 1)`, which is smooth, so the corners of the periodic function at the
