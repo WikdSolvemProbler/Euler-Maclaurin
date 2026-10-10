@@ -3,8 +3,7 @@ version = "0.1.0"
 defaultTargets = ["EulerMaclaurin", "EulerMaclaurinTest"]
 lintDriver = "batteries/runLinter"
 lintDriverArgs = [
-  "EulerMaclaurin.PeriodicBernoulli",
-  "EulerMaclaurin.BernoulliBounds",
+  "EulerMaclaurin.Bernoulli",
   "EulerMaclaurin.Formula",
   "EulerMaclaurin.RemainderBound"
 ]

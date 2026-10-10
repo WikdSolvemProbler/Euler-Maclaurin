@@ -5,9 +5,8 @@ Authors: Peter Shiller
 -/
 module
 
-public import EulerMaclaurin.BernoulliBounds
+public import EulerMaclaurin.Bernoulli
 public import EulerMaclaurin.Formula
-public import EulerMaclaurin.PeriodicBernoulli
 public import EulerMaclaurin.RemainderBound
 
 /-!
@@ -15,8 +14,9 @@ public import EulerMaclaurin.RemainderBound
 
 This file imports the development of the Euler-Maclaurin formula at every order:
 
-* `EulerMaclaurin.PeriodicBernoulli`: the periodic Bernoulli functions `periodicBernoulli k`.
-* `EulerMaclaurin.BernoulliBounds`: explicit bounds for the Bernoulli polynomials on `[0, 1]`.
+* `EulerMaclaurin.Bernoulli`: explicit bounds for the Bernoulli polynomials on $[0, 1]$, the
+  periodic Bernoulli function as `periodizedBernoulli` on the unit circle, and integration by
+  parts against a Bernoulli polynomial.
 * `EulerMaclaurin.Formula`: the formula, with the remainder as an explicit integral.
-* `EulerMaclaurin.RemainderBound`: bounds for the remainder.
+* `EulerMaclaurin.RemainderBound`: bounds for the remainder integral.
 -/
