@@ -1,8 +1,13 @@
 name = "eulerMaclaurin"
 version = "0.1.0"
-defaultTargets = ["EulerMaclaurin"]
+defaultTargets = ["EulerMaclaurin", "EulerMaclaurinTest"]
 lintDriver = "batteries/runLinter"
-lintDriverArgs = ["EulerMaclaurin"]
+lintDriverArgs = [
+  "EulerMaclaurin.PeriodicBernoulli",
+  "EulerMaclaurin.BernoulliBounds",
+  "EulerMaclaurin.Formula",
+  "EulerMaclaurin.RemainderBound"
+]
 
 [leanOptions]
 pp.unicode.fun = true
@@ -21,3 +26,8 @@ rev = "v4.34.1"
 
 [[lean_lib]]
 name = "EulerMaclaurin"
+globs = ["EulerMaclaurin", "EulerMaclaurin.+"]
+
+[[lean_lib]]
+name = "EulerMaclaurinTest"
+globs = ["EulerMaclaurinTest", "EulerMaclaurinTest.+"]
