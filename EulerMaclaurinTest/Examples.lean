@@ -15,7 +15,7 @@ These examples check that the hypotheses of the theorems in `EulerMaclaurin` are
 that the conclusions are nondegenerate:
 
 * Faulhaber's formula for $\sum i^2$ is the case $p = 3$ of the formula for a family of
-  derivatives, where the remainder vanishes.
+  derivatives, where the remainder vanishes, both for `Finset.Ioc` and for `Finset.Icc`.
 * The formula of order $2$ for the exponential function on $[0, n]$, stated with the integral, the
   boundary terms and the remainder integral written out.
 * The case $p = 1$ for real end points, which is the first order formula
@@ -62,6 +62,29 @@ example (n : ℕ) :
         (sqFamily k ((n : ℤ) : ℝ) - sqFamily k ((0 : ℤ) : ℝ)) = (n : ℝ) ^ 2 / 2 + n / 6 := by
     norm_num [Finset.sum_range_succ, bernoulli'_one, bernoulli'_two, bernoulli'_three,
       Nat.factorial, sqFamily]
+    ring
+  rw [hrem, hint, hsum] at h
+  simp only [sqFamily, smul_eq_mul] at h
+  push_cast at h
+  linarith
+
+/-- **Faulhaber's formula** over `Finset.Icc`: the sum from `0` is the same, since the term `0 ^ 2`
+vanishes.  Here the boundary terms are `(f 0 + f n) / 2` and `B_2 / 2! * (f' n - f' 0) = n / 6`,
+and the remainder integral of order `3` is zero. -/
+example (n : ℕ) :
+    ∑ i ∈ Finset.Icc (0 : ℤ) n, (i : ℝ) ^ 2 = (n : ℝ) ^ 3 / 3 + (n : ℝ) ^ 2 / 2 + n / 6 := by
+  have h := sum_Icc_int_eq_integral_add_of_hasDerivWithinAt (p := 3) (F := sqFamily) (a := 0)
+    (b := n) (by norm_num) (Int.natCast_nonneg n)
+    (fun k hk x _ ↦ (hasDerivAt_sqFamily hk x).hasDerivWithinAt)
+    (by simp [sqFamily])
+  have hrem : (∫ t in ((0 : ℤ) : ℝ)..((n : ℤ) : ℝ),
+      periodizedBernoulli 3 t • sqFamily 3 t) = 0 := by
+    simp [sqFamily]
+  have hint : (∫ t in ((0 : ℤ) : ℝ)..((n : ℤ) : ℝ), sqFamily 0 t) = (n : ℝ) ^ 3 / 3 := by
+    norm_num [sqFamily, integral_pow]
+  have hsum : ∑ j ∈ Finset.range (3 / 2), ((bernoulli (2 * j + 2) : ℝ) / ((2 * j + 2)! : ℝ)) •
+        (sqFamily (2 * j + 1) ((n : ℤ) : ℝ) - sqFamily (2 * j + 1) ((0 : ℤ) : ℝ)) = n / 6 := by
+    norm_num [Finset.sum_range_succ, bernoulli_two, Nat.factorial, sqFamily]
     ring
   rw [hrem, hint, hsum] at h
   simp only [sqFamily, smul_eq_mul] at h

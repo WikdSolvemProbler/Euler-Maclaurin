@@ -6,6 +6,7 @@ Authors: Peter Shiller
 module
 
 public import EulerMaclaurin.Bernoulli
+public import EulerMaclaurin.BernoulliSum
 public import EulerMaclaurin.IteratedDeriv
 public import Mathlib.Data.Nat.Cast.SetInterval
 
@@ -30,12 +31,17 @@ $B'_n = (-1)^n B_n$ the formula reads
 $$\sum_{i = a + 1}^{b} f(i) = \int_a^b f(t) \, dt
   + \sum_{k = 0}^{p - 1} \frac{B'_{k + 1}}{(k + 1)!} \bigl( f^{(k)}(b) - f^{(k)}(a) \bigr)
   + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p(t) f^{(p)}(t) \, dt.$$
-Since $B'_1 = 1/2$ and $B'_n = 0$ for odd $n \ge 3$, the sum over `Finset.Icc a b` is
+Since $B'_1 = 1/2$ and $B'_n = 0$ for odd $n \ge 3$ (`sum_range_bernoulli'_div_factorial_smul`), the
+sum over `Finset.Icc a b` is
 $$\sum_{i = a}^{b} f(i) = \int_a^b f(t) \, dt + \frac{f(a) + f(b)}{2}
   + \sum_{j = 0}^{\lfloor p / 2 \rfloor - 1} \frac{B_{2j + 2}}{(2j + 2)!}
     \bigl( f^{(2j + 1)}(b) - f^{(2j + 1)}(a) \bigr)
   + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p(t) f^{(p)}(t) \, dt.$$
-A bound for the remainder integral is `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le`.
+The error of the formula, that is, the remainder term with its coefficient, is bounded in
+`EulerMaclaurin.RemainderBound`: by
+`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le` in terms of any uniform
+bound for $B_p$ on $[0, 1]$, and by `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le` with the
+constant $4 / 6^p$.
 
 ## Main results
 
@@ -55,8 +61,15 @@ end points in `ℤ` and in `ℕ`.
 * `EulerMaclaurin.sum_Ioc_int_eq_integral_add` and
   `EulerMaclaurin.sum_Ioc_int_eq_integral_add_of_hasDerivWithinAt`: the two statements for integer
   end points, in which the periodic Bernoulli function does not occur in the boundary terms.
-* `EulerMaclaurin.sum_Icc_int_eq_integral_add` and `EulerMaclaurin.sum_Icc_nat_eq_integral_add`:
-  the $C^p$ statement for `Finset.Icc` with end points in `ℤ` and in `ℕ`.
+* `EulerMaclaurin.sum_Icc_int_eq_integral_add` and
+  `EulerMaclaurin.sum_Icc_int_eq_integral_add_of_hasDerivWithinAt`, and
+  `EulerMaclaurin.sum_Icc_nat_eq_integral_add` and
+  `EulerMaclaurin.sum_Icc_nat_eq_integral_add_of_hasDerivWithinAt`: the two statements for
+  `Finset.Icc` with end points in `ℤ` and in `ℕ`.  They are the Ioc statements for integer end
+  points with the odd Bernoulli numbers removed.
+* `sum_range_bernoulli'_div_factorial_smul`, in `EulerMaclaurin.BernoulliSum`: the regrouping of the
+  coefficients $B'_{k + 1} / (k + 1)!$ used for this, which is a fact about Bernoulli numbers and
+  does not involve analysis.
 
 ## Implementation notes
 
@@ -110,13 +123,9 @@ private theorem integral_add_sum_add_integral_bernoulliFun_eq_zero {F : ℕ → 
       ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
         (bernoulliFun (k + 1) (y - c) • F k y - bernoulliFun (k + 1) (x - c) • F k x) +
       ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in x..y, bernoulliFun p (t - c) • F p t = 0 := by
-  revert hF hFp
   induction p with
-  | zero =>
-    intro _ _
-    simp
+  | zero => simp
   | succ p ih =>
-    intro hF hFp
     have hcp : ContinuousOn (F p) (Set.uIcc x y) := fun t ht ↦
       (hF p (Nat.lt_add_one p) t ht).continuousWithinAt
     have h1 := ih (fun k hk t ht ↦ hF k (by omega) t ht) hcp.intervalIntegrable
@@ -228,23 +237,21 @@ private theorem rhs_eq_of_floor_add_one {p : ℕ} (hp : p ≠ 0) {F : ℕ → �
 
 /-- The Euler-Maclaurin formula for real end points, by induction on the number `N` of integers
 in `(a, b]`. -/
-private theorem sum_Ioc_floor_aux {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E} {b : ℝ} (N : ℕ) :
-    ∀ a : ℝ, a ≤ b → ⌊b⌋ - ⌊a⌋ = N →
-      (∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc a b) x) →
-      IntervalIntegrable (F p) volume a b →
-      ∑ i ∈ Finset.Ioc ⌊a⌋ ⌊b⌋, F 0 (i : ℝ) =
-        (∫ t in a..b, F 0 t) +
-          ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
-            (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) a • F k a) +
-          ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b, periodizedBernoulli p t • F p t := by
-  induction N with
+private theorem sum_Ioc_floor_aux {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E} {a b : ℝ} (N : ℕ)
+    (hab : a ≤ b) (hN : ⌊b⌋ - ⌊a⌋ = N)
+    (hF : ∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc a b) x)
+    (hFp : IntervalIntegrable (F p) volume a b) :
+    ∑ i ∈ Finset.Ioc ⌊a⌋ ⌊b⌋, F 0 (i : ℝ) =
+      (∫ t in a..b, F 0 t) +
+        ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
+          (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) a • F k a) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b, periodizedBernoulli p t • F p t := by
+  induction N generalizing a with
   | zero =>
-    intro a hab hN hF hFp
     have hfl : ⌊a⌋ = ⌊b⌋ := by omega
     rw [hfl, Finset.Ioc_self, Finset.sum_empty]
     exact (rhs_eq_zero hab hfl hF hFp).symm
   | succ N ih =>
-    intro a hab hN hF hFp
     obtain ⟨n, hn⟩ : ∃ n : ℤ, ⌊a⌋ + 1 = n := ⟨_, rfl⟩
     have hn_le : n ≤ ⌊b⌋ := by omega
     have hnb : (n : ℝ) ≤ b := by
@@ -268,7 +275,7 @@ private theorem sum_Ioc_floor_aux {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → 
       (hc0.mono hsub1).intervalIntegrable_of_Icc han
     have hI2 : IntervalIntegrable (F 0) volume (n : ℝ) b :=
       (hc0.mono hsub2).intervalIntegrable_of_Icc hnb
-    have ih' := ih (n : ℝ) hnb (by rw [hfln]; omega)
+    have ih' := ih (a := (n : ℝ)) hnb (by rw [hfln]; omega)
       (fun k hk x hx ↦ (hF k hk x (hsub2 hx)).mono hsub2) hFp2
     have hstep := rhs_eq_of_floor_add_one hp hn
       (fun k hk x hx ↦ (hF k hk x (hsub1 hx)).mono hsub1) hFp1
@@ -315,7 +322,7 @@ theorem sum_Ioc_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F 
         ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
           (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) a • F k a) +
         ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b, periodizedBernoulli p t • F p t :=
-  sum_Ioc_floor_aux hp (⌊b⌋ - ⌊a⌋).toNat a hab
+  sum_Ioc_floor_aux hp (⌊b⌋ - ⌊a⌋).toNat hab
     (Int.toNat_of_nonneg (sub_nonneg.2 (Int.floor_mono hab))).symm hF hFp
 
 /-- **The Euler-Maclaurin summation formula** for real end points and a `C^p` function.  Let
@@ -446,32 +453,31 @@ theorem sum_Ioc_int_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a 
   rw [sum_bernoulli'_smul_sub]
   exact h
 
-/-- Regrouping the coefficients `B'_{k+1} / (k + 1)!`, `k < p`: since `B'_1 = 1 / 2` and `B'_n = 0`
-for odd `n ≥ 3`, only `k = 0`, with coefficient `1 / 2`, and the odd values `k = 2j + 1` survive,
-with coefficient `B_{2j + 2} / (2j + 2)!`. -/
-private theorem sum_range_split {G : Type*} [AddCommGroup G] [Module ℝ G] {p : ℕ} (hp : p ≠ 0)
-    (c : ℕ → G) :
-    ∑ k ∈ Finset.range p, ((bernoulli' (k + 1) : ℝ) / ((k + 1)! : ℝ)) • c k =
-      (1 / 2 : ℝ) • c 0 + ∑ j ∈ Finset.range (p / 2),
-        ((bernoulli (2 * j + 2) : ℝ) / ((2 * j + 2)! : ℝ)) • c (2 * j + 1) := by
-  have hp1 : 1 ≤ p := Nat.one_le_iff_ne_zero.mpr hp
-  induction p, hp1 using Nat.le_induction with
-  | base =>
-    norm_num [bernoulli'_one]
-  | succ p hp ih =>
-    rw [Finset.sum_range_succ, ih (by omega)]
-    obtain ⟨r, rfl | rfl⟩ := Nat.even_or_odd' p
-    · have hodd : bernoulli' (2 * r + 1) = 0 :=
-        bernoulli'_eq_zero_of_odd ⟨r, rfl⟩ (by omega)
-      have hdiv : (2 * r + 1) / 2 = 2 * r / 2 := by omega
-      rw [hdiv]
-      simp [hodd]
-    · have h1 : (2 * r + 1 + 1) / 2 = r + 1 := by omega
-      have h2 : (2 * r + 1) / 2 = r := by omega
-      have h3 : 2 * r + 1 + 1 = 2 * r + 2 := rfl
-      rw [h1, h2, Finset.sum_range_succ, h3,
-        ← bernoulli_eq_bernoulli'_of_ne_one (by omega : 2 * r + 2 ≠ 1)]
-      module
+/-- **The Euler-Maclaurin summation formula over `Finset.Icc`** for integer end points, for a
+family `F : ℕ → ℝ → E` of successive derivatives.  Let `a ≤ b` be integers, `p ≥ 1`, and suppose
+that for `k < p` the function `F k` has derivative `F (k + 1)` within `[a, b]`, and that `F p` is
+interval integrable on `[a, b]`.  Then `∑ i ∈ Finset.Icc a b, F 0 i` equals
+$$\int_a^b F_0 + \frac{F_0(a) + F_0(b)}{2}
+  + \sum_{j < \lfloor p / 2 \rfloor} \frac{B_{2j + 2}}{(2j + 2)!}
+    (F_{2j + 1}(b) - F_{2j + 1}(a))
+  + \frac{(-1)^{p + 1}}{p!} \int_a^b P_p F_p,$$
+where `P_p = periodizedBernoulli p`.  The odd Bernoulli numbers have been removed from the
+boundary terms of `EulerMaclaurin.sum_Ioc_int_eq_integral_add_of_hasDerivWithinAt` with
+`sum_range_bernoulli'_div_factorial_smul`. -/
+theorem sum_Icc_int_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E}
+    {a b : ℤ} (hab : a ≤ b)
+    (hF : ∀ k < p, ∀ x ∈ Set.Icc (a : ℝ) b,
+      HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc (a : ℝ) b) x)
+    (hFp : IntervalIntegrable (F p) volume (a : ℝ) b) :
+    ∑ i ∈ Finset.Icc a b, F 0 (i : ℝ) =
+      (∫ t in (a : ℝ)..b, F 0 t) + (1 / 2 : ℝ) • (F 0 a + F 0 b) +
+        ∑ j ∈ Finset.range (p / 2), ((bernoulli (2 * j + 2) : ℝ) / ((2 * j + 2)! : ℝ)) •
+          (F (2 * j + 1) b - F (2 * j + 1) a) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in (a : ℝ)..b, periodizedBernoulli p t • F p t := by
+  have h := sum_Ioc_int_eq_integral_add_of_hasDerivWithinAt hp hab hF hFp
+  rw [sum_range_bernoulli'_div_factorial_smul hp (fun k ↦ F k b - F k a)] at h
+  rw [Finset.Icc_eq_cons_Ioc hab, Finset.sum_cons]
+  linear_combination (norm := module) h
 
 /-- **The Euler-Maclaurin summation formula over `Finset.Icc`** for integer end points and a `C^p`
 function.  Let `a ≤ b` be integers and `p ≥ 1`.  If `f` is `C^p` on `[a, b]`, then
@@ -491,12 +497,38 @@ theorem sum_Icc_int_eq_integral_add {f : ℝ → E} {p : ℕ} (hp : p ≠ 0) {a 
             iteratedDerivWithin (2 * j + 1) f (Set.Icc (a : ℝ) b) a) +
         ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in (a : ℝ)..b,
           periodizedBernoulli p t • iteratedDerivWithin p f (Set.Icc (a : ℝ) b) t := by
-  have h := sum_Ioc_int_eq_integral_add hp hab hf
-  rw [sum_range_split hp (fun k ↦ iteratedDerivWithin k f (Set.Icc (a : ℝ) b) b -
-    iteratedDerivWithin k f (Set.Icc (a : ℝ) b) a)] at h
-  simp only [iteratedDerivWithin_zero] at h
-  rw [Finset.Icc_eq_cons_Ioc hab, Finset.sum_cons]
-  linear_combination (norm := module) h
+  rcases hab.eq_or_lt with rfl | hlt
+  · simp only [Finset.Icc_self, Finset.sum_singleton, intervalIntegral.integral_same, sub_self,
+      smul_zero, Finset.sum_const_zero, add_zero, zero_add]
+    module
+  · have hlt' : (a : ℝ) < b := by exact_mod_cast hlt
+    have hU : UniqueDiffOn ℝ (Set.Icc (a : ℝ) b) := uniqueDiffOn_Icc hlt'
+    simpa only [iteratedDerivWithin_zero] using
+      sum_Icc_int_eq_integral_add_of_hasDerivWithinAt
+        (F := fun k ↦ iteratedDerivWithin k f (Set.Icc (a : ℝ) b)) hp hab
+        (fun k hk x hx ↦ hf.hasDerivWithinAt_iteratedDerivWithin (by exact_mod_cast hk) hU hx)
+        ((hf.continuousOn_iteratedDerivWithin le_rfl hU).intervalIntegrable_of_Icc hlt'.le)
+
+/-- **The Euler-Maclaurin summation formula over `Finset.Icc`** for end points in `ℕ`, for a family
+`F : ℕ → ℝ → E` of successive derivatives: the case of
+`EulerMaclaurin.sum_Icc_int_eq_integral_add_of_hasDerivWithinAt` with end points `a ≤ b` in `ℕ`. -/
+theorem sum_Icc_nat_eq_integral_add_of_hasDerivWithinAt {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E}
+    {a b : ℕ} (hab : a ≤ b)
+    (hF : ∀ k < p, ∀ x ∈ Set.Icc (a : ℝ) b,
+      HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc (a : ℝ) b) x)
+    (hFp : IntervalIntegrable (F p) volume (a : ℝ) b) :
+    ∑ i ∈ Finset.Icc a b, F 0 (i : ℝ) =
+      (∫ t in (a : ℝ)..b, F 0 t) + (1 / 2 : ℝ) • (F 0 a + F 0 b) +
+        ∑ j ∈ Finset.range (p / 2), ((bernoulli (2 * j + 2) : ℝ) / ((2 * j + 2)! : ℝ)) •
+          (F (2 * j + 1) b - F (2 * j + 1) a) +
+        ((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in (a : ℝ)..b, periodizedBernoulli p t • F p t := by
+  have h := sum_Icc_int_eq_integral_add_of_hasDerivWithinAt hp (F := F) (a := (a : ℤ))
+    (b := (b : ℤ)) (by exact_mod_cast hab) (by simpa only [Int.cast_natCast] using hF)
+    (by simpa only [Int.cast_natCast] using hFp)
+  simp only [Int.cast_natCast] at h
+  rw [sum_intCast_eq_sum (fun i : ℤ ↦ F 0 (i : ℝ))] at h
+  · simpa only [Int.cast_natCast] using h
+  · simpa only [Finset.coe_Icc] using Nat.image_cast_int_Icc _ _
 
 /-- **The Euler-Maclaurin summation formula over `Finset.Icc`** for end points in `ℕ` and a `C^p`
 function: the case of `EulerMaclaurin.sum_Icc_int_eq_integral_add` with end points `a ≤ b` in

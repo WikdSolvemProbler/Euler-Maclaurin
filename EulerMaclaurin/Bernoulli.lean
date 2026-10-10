@@ -5,6 +5,7 @@ Authors: Peter Shiller
 -/
 module
 
+public import EulerMaclaurin.MeasurableLiftIco
 public import Mathlib.NumberTheory.ZetaValues
 
 /-!
@@ -30,8 +31,8 @@ quotient map $\mathbb{R} \to \mathbb{R} / \mathbb{Z}$, which is a coercion in Le
 $$P_k(x) = B_k(\{x\}),$$
 where $\{x\}$ is the fractional part (`periodizedBernoulli_coe`).  This gives its value on
 $[m, m + 1)$ for an integer $m$, its value at the integers, its measurability (also for $k = 1$,
-where it has jumps at the integers), and the interval integrability of its product with an
-interval integrable function.
+where it has jumps at the integers, from `AddCircle.measurable_liftIco`), and the interval
+integrability of its product with an interval integrable function.
 
 ## Integration by parts
 
@@ -149,10 +150,8 @@ theorem periodizedBernoulli_intCast (k : ℕ) (m : ℤ) :
 /-- The periodized Bernoulli polynomial is measurable on the circle for every `k`, including
 `k = 1`, where it jumps at the origin. -/
 @[fun_prop]
-theorem measurable_periodizedBernoulli (k : ℕ) : Measurable (periodizedBernoulli k) := by
-  have h : Measurable fun x : Set.Ico (0 : ℝ) (0 + 1) ↦ bernoulliFun k x :=
-    (continuous_bernoulliFun k).measurable.comp measurable_subtype_coe
-  exact h.comp (AddCircle.measurableEquivIco 1 0).measurable
+theorem measurable_periodizedBernoulli (k : ℕ) : Measurable (periodizedBernoulli k) :=
+  AddCircle.measurable_liftIco (continuous_bernoulliFun k).measurable
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
