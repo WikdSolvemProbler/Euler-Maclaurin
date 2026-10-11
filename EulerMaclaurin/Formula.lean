@@ -47,7 +47,9 @@ constant $4 / 6^p$.
 
 The infix of a name records the type of the end points `a` and `b`: no infix for real end points
 with the floor in `ℤ`, `natFloor` for real end points with the floor in `ℕ`, and `int` and `nat` for
-end points in `ℤ` and in `ℕ`.
+end points in `ℤ` and in `ℕ`.  The statement for a $C^p$ function has no suffix, and the statement
+for a family of derivatives has the suffix `_of_hasDerivWithinAt`, as in
+`EulerMaclaurin.RemainderBound`.
 
 * `EulerMaclaurin.sum_Ioc_eq_integral_add`: the formula for real end points and a $C^p$ function,
   with the derivatives written as `iteratedDerivWithin`.

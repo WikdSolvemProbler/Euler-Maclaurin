@@ -47,8 +47,10 @@ If $|B_p(x)| \le D$ on $[0, 1]$, dividing by $p!$ gives an error bound for the E
 formula itself: the difference between the sum and the integral plus the boundary terms of order $p$
 is at most
 $$\frac{D}{p!} \int_a^b \|f^{(p)}\|.$$
-This is stated for a family of derivatives and for a $C^p$ function.  The choices of $D$ above give
-the error bounds with $D = 1/2$ for $p = 1$, with the series for $p \ge 2$, and with the rational
+This is stated for a $C^p$ function and for a family of derivatives.  As for the formula, the
+statement for a $C^p$ function has no suffix, and the statement for a family of derivatives has the
+suffix `_of_hasDerivWithinAt` (see `EulerMaclaurin.Formula`).  The choices of $D$ above give the
+error bounds with $D = 1/2$ for $p = 1$, with the series for $p \ge 2$, and with the rational
 constant, which is $\frac{4}{6^p} \int_a^b \|f^{(p)}\|$.  For even $p = 2m$ the choice
 $D = |B_{2m}|$ gives the classical form
 $\frac{|B_{2m}|}{(2m)!} \int_a^b \|f^{(2m)}\|$.  The rational constant and the even order are stated
@@ -70,16 +72,16 @@ as theorems; the others follow from the general bound.
 * `EulerMaclaurin.norm_integral_periodizedBernoulli_two_mul_smul_le`: the sharp bound in even
   order.
 * `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le`: the error bound for the
-  Euler-Maclaurin formula in terms of any uniform bound $D$ for $B_p$ on $[0, 1]$, for a family of
-  derivatives.
-* `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn_of_abs_bernoulliFun_le`: the same
-  bound for a $C^p$ function.
-* `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le`: the error bound with the rational constant
-  $4 / 6^p$, for a family of derivatives.
-* `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn`: the same bound for a $C^p$
+  Euler-Maclaurin formula in terms of any uniform bound $D$ for $B_p$ on $[0, 1]$, for a $C^p$
   function.
-* `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_two_mul`: the error bound $|B_{2m}| / (2m)!$ in
-  even order, for a family of derivatives.
+* `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le_of_hasDerivWithinAt`: the
+  same bound for a family of derivatives.
+* `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le`: the error bound with the rational constant
+  $4 / 6^p$, for a $C^p$ function.
+* `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_hasDerivWithinAt`: the same bound for a family
+  of derivatives.
+* `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_two_mul_of_hasDerivWithinAt`: the error bound
+  $|B_{2m}| / (2m)!$ in even order, for a family of derivatives.
 
 ## Tags
 
@@ -216,13 +218,14 @@ private theorem four_mul_factorial_div_six_pow_div_factorial (p : ℕ) :
   field_simp
 
 /-- **Error bound for the Euler-Maclaurin formula** in terms of a uniform bound for the Bernoulli
-polynomial.  Under the hypotheses of `EulerMaclaurin.sum_Ioc_eq_integral_add_of_hasDerivWithinAt`,
-if `|B_p(x)| ≤ D` for `x ∈ [0, 1]`, the difference between the sum over the integers in `(a, b]` and
-the integral plus the boundary terms of order `p` is at most `D / p ! * ∫ ‖F p‖`.  The constants in
-the bounds below are instances: `D = 1 / 2` for `p = 1`, `D = 2 * ζ(p) * p ! / (2 * π) ^ p` for
-`p ≥ 2` (`abs_bernoulliFun_le`), `D = |B_p|` for even `p`, and `D = 4 * p ! / 6 ^ p`. -/
-theorem norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le [CompleteSpace E] {p : ℕ} {D : ℝ}
-    (hp : p ≠ 0) {F : ℕ → ℝ → E} (hab : a ≤ b)
+polynomial, for a family of derivatives.  Under the hypotheses of
+`EulerMaclaurin.sum_Ioc_eq_integral_add_of_hasDerivWithinAt`, if `|B_p(x)| ≤ D` for `x ∈ [0, 1]`,
+the difference between the sum over the integers in `(a, b]` and the integral plus the boundary
+terms of order `p` is at most `D / p ! * ∫ ‖F p‖`.  The constants in the bounds below are instances:
+`D = 1 / 2` for `p = 1`, `D = 2 * ζ(p) * p ! / (2 * π) ^ p` for `p ≥ 2` (`abs_bernoulliFun_le`),
+`D = |B_p|` for even `p`, and `D = 4 * p ! / 6 ^ p`. -/
+theorem norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le_of_hasDerivWithinAt
+    [CompleteSpace E] {p : ℕ} {D : ℝ} (hp : p ≠ 0) {F : ℕ → ℝ → E} (hab : a ≤ b)
     (hD : ∀ x ∈ Set.Icc (0 : ℝ) 1, |bernoulliFun p x| ≤ D)
     (hF : ∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc a b) x)
     (hFp : IntervalIntegrable (F p) volume a b) :
@@ -237,9 +240,9 @@ theorem norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le [CompleteSpace E
 
 /-- **Error bound for the Euler-Maclaurin formula** for a `C^p` function, in terms of a uniform
 bound for the Bernoulli polynomial: the case of
-`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le` for the derivatives
-`iteratedDerivWithin k f (Set.Icc a b)`. -/
-theorem norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn_of_abs_bernoulliFun_le [CompleteSpace E]
+`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le_of_hasDerivWithinAt` for the
+derivatives `iteratedDerivWithin k f (Set.Icc a b)`. -/
+theorem norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le [CompleteSpace E]
     {f : ℝ → E} {p : ℕ} {D : ℝ} (hp : p ≠ 0) (hab : a ≤ b)
     (hD : ∀ x ∈ Set.Icc (0 : ℝ) 1, |bernoulliFun p x| ≤ D)
     (hf : ContDiffOn ℝ p f (Set.Icc a b)) :
@@ -252,7 +255,7 @@ theorem norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn_of_abs_bernoulliFun_le [C
   · simp
   · have hU : UniqueDiffOn ℝ (Set.Icc a b) := uniqueDiffOn_Icc hlt
     simpa only [iteratedDerivWithin_zero] using
-      norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le
+      norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le_of_hasDerivWithinAt
         (F := fun k ↦ iteratedDerivWithin k f (Set.Icc a b)) hp hab hD
         (fun k hk x hx ↦ hf.hasDerivWithinAt_iteratedDerivWithin (by exact_mod_cast hk) hU hx)
         ((hf.continuousOn_iteratedDerivWithin le_rfl hU).intervalIntegrable_of_Icc hab)
@@ -261,15 +264,15 @@ theorem norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn_of_abs_bernoulliFun_le [C
 hypotheses of `EulerMaclaurin.sum_Ioc_eq_integral_add_of_hasDerivWithinAt`, the difference between
 the sum over the integers in `(a, b]` and the integral plus the boundary terms of order `p` is at
 most `4 / 6 ^ p * ∫ ‖F p‖`. -/
-theorem norm_sum_Ioc_sub_integral_sub_le [CompleteSpace E] {p : ℕ} (hp : p ≠ 0) {F : ℕ → ℝ → E}
-    (hab : a ≤ b)
+theorem norm_sum_Ioc_sub_integral_sub_le_of_hasDerivWithinAt [CompleteSpace E] {p : ℕ}
+    (hp : p ≠ 0) {F : ℕ → ℝ → E} (hab : a ≤ b)
     (hF : ∀ k < p, ∀ x ∈ Set.Icc a b, HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc a b) x)
     (hFp : IntervalIntegrable (F p) volume a b) :
     ‖∑ i ∈ Finset.Ioc ⌊a⌋ ⌊b⌋, F 0 (i : ℝ) - (∫ t in a..b, F 0 t) -
         ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
           (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) a • F k a)‖ ≤
       4 / 6 ^ p * ∫ t in a..b, ‖F p t‖ :=
-  (norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le hp hab
+  (norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le_of_hasDerivWithinAt hp hab
     (fun _ hx ↦ abs_bernoulliFun_le_four_mul_factorial_div_six_pow p hx) hF hFp).trans_eq
     (by rw [four_mul_factorial_div_six_pow_div_factorial])
 
@@ -277,14 +280,14 @@ theorem norm_sum_Ioc_sub_integral_sub_le [CompleteSpace E] {p : ℕ} (hp : p ≠
 function.  Under the hypotheses of `EulerMaclaurin.sum_Ioc_eq_integral_add`, the difference between
 the sum over the integers in `(a, b]` and the integral plus the boundary terms of order `p` is at
 most `4 / 6 ^ p * ∫ ‖f^(p)‖`, where `f^(p)` is `iteratedDerivWithin p f (Set.Icc a b)`. -/
-theorem norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn [CompleteSpace E] {f : ℝ → E} {p : ℕ}
+theorem norm_sum_Ioc_sub_integral_sub_le [CompleteSpace E] {f : ℝ → E} {p : ℕ}
     (hp : p ≠ 0) (hab : a ≤ b) (hf : ContDiffOn ℝ p f (Set.Icc a b)) :
     ‖∑ i ∈ Finset.Ioc ⌊a⌋ ⌊b⌋, f (i : ℝ) - (∫ t in a..b, f t) -
         ∑ k ∈ Finset.range p, ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
           (periodizedBernoulli (k + 1) b • iteratedDerivWithin k f (Set.Icc a b) b -
             periodizedBernoulli (k + 1) a • iteratedDerivWithin k f (Set.Icc a b) a)‖ ≤
       4 / 6 ^ p * ∫ t in a..b, ‖iteratedDerivWithin p f (Set.Icc a b) t‖ :=
-  (norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn_of_abs_bernoulliFun_le hp hab
+  (norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le hp hab
     (fun _ hx ↦ abs_bernoulliFun_le_four_mul_factorial_div_six_pow p hx) hf).trans_eq
     (by rw [four_mul_factorial_div_six_pow_div_factorial])
 
@@ -292,8 +295,8 @@ theorem norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn [CompleteSpace E] {f : �
 `EulerMaclaurin.sum_Ioc_eq_integral_add_of_hasDerivWithinAt` with `p = 2 * m`, the difference
 between the sum over the integers in `(a, b]` and the integral plus the boundary terms of order
 `2 * m` is at most `|B_{2m}| / (2m)! * ∫ ‖F (2 * m)‖`, the classical form of the error term. -/
-theorem norm_sum_Ioc_sub_integral_sub_le_two_mul [CompleteSpace E] {m : ℕ} (hm : m ≠ 0)
-    {F : ℕ → ℝ → E} (hab : a ≤ b)
+theorem norm_sum_Ioc_sub_integral_sub_le_two_mul_of_hasDerivWithinAt [CompleteSpace E] {m : ℕ}
+    (hm : m ≠ 0) {F : ℕ → ℝ → E} (hab : a ≤ b)
     (hF : ∀ k < 2 * m, ∀ x ∈ Set.Icc a b,
       HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc a b) x)
     (hFp : IntervalIntegrable (F (2 * m)) volume a b) :
@@ -301,7 +304,7 @@ theorem norm_sum_Ioc_sub_integral_sub_le_two_mul [CompleteSpace E] {m : ℕ} (hm
         ∑ k ∈ Finset.range (2 * m), ((-1 : ℝ) ^ (k + 1) / ((k + 1)! : ℝ)) •
           (periodizedBernoulli (k + 1) b • F k b - periodizedBernoulli (k + 1) a • F k a)‖ ≤
       |(bernoulli (2 * m) : ℝ)| / (2 * m)! * ∫ t in a..b, ‖F (2 * m) t‖ :=
-  norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le (by omega) hab
+  norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le_of_hasDerivWithinAt (by omega) hab
     (fun _ hx ↦ abs_bernoulliFun_two_mul_le_abs_bernoulli m hx) hF hFp
 
 end EulerMaclaurin

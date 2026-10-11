@@ -23,6 +23,9 @@ that the conclusions are nondegenerate:
   $B_1(x) = x - \lfloor x \rfloor - 1/2$.
 * The remainder integral of order $1$ of a constant function is a nonzero number.
 * The remainder bounds and the bounds for the Bernoulli polynomials are concrete inequalities.
+* The value of the periodized Bernoulli polynomial at an integer, a natural number, a numeral, `0`
+  and `1` is found by `simp`, and the measurability of the periodization of a measurable function is
+  found by `fun_prop`.
 -/
 
 public section
@@ -205,3 +208,29 @@ example : |bernoulliFun (2 * 1) (0 : ℝ)| = |(bernoulli (2 * 1) : ℝ)| := by
 
 example : |bernoulliFun (2 * 1) (1 / 2 : ℝ)| ≤ |(bernoulli (2 * 1) : ℝ)| :=
   abs_bernoulliFun_two_mul_le_abs_bernoulli 1 ⟨by norm_num, by norm_num⟩
+
+/-- `simp` evaluates the periodized Bernoulli polynomial at an integer. -/
+example (k : ℕ) (m : ℤ) : periodizedBernoulli k (m : ℝ) = bernoulli k := by simp
+
+/-- `simp` evaluates the periodized Bernoulli polynomial at a natural number. -/
+example (k n : ℕ) : periodizedBernoulli k (n : ℝ) = bernoulli k := by simp
+
+/-- `simp` evaluates the periodized Bernoulli polynomial at a numeral. -/
+example (k : ℕ) : periodizedBernoulli k (5 : ℝ) = bernoulli k := by simp
+
+/-- `simp` evaluates the periodized Bernoulli polynomial at the real number `1`. -/
+example (k : ℕ) : periodizedBernoulli k (1 : ℝ) = bernoulli k := by simp
+
+/-- `simp` evaluates the periodized Bernoulli polynomial at the real number `0`. -/
+example (k : ℕ) : periodizedBernoulli k (0 : ℝ) = bernoulli k := by simp
+
+/-- `simp` evaluates the periodized Bernoulli polynomial at the zero of the circle. -/
+example (k : ℕ) : periodizedBernoulli k 0 = bernoulli k := by simp
+
+/-- `fun_prop` proves the measurability of the periodization of a measurable function on
+`[0, 1)`. -/
+example : Measurable (AddCircle.liftIco 1 0 (fun x : ℝ ↦ x ^ 2)) := by fun_prop
+
+/-- `fun_prop` proves the measurability of the periodization of a measurable function on
+`(0, 1]`. -/
+example : Measurable (AddCircle.liftIoc 1 0 (fun x : ℝ ↦ x ^ 2)) := by fun_prop

@@ -5,7 +5,7 @@ Authors: Peter Shiller
 -/
 module
 
-public import EulerMaclaurin.MeasurableLiftIco
+public import EulerMaclaurin.MeasurableLift
 public import Mathlib.NumberTheory.ZetaValues
 
 /-!
@@ -18,7 +18,7 @@ functions, which this file proves.
 
 ## Explicit bounds
 
-Taking norms termwise in Mathlib's Fourier expansion of $B_k$ on $[0, 1]$
+Taking norms termwise in the Fourier expansion of $B_k$ on $[0, 1]$
 (`hasSum_one_div_nat_pow_mul_fourier`) gives, for $k \ge 2$ and $x \in [0, 1]$,
 $$|B_k(x)| \le \frac{2 \, k!}{(2 \pi)^k} \sum_{n \ge 1} \frac{1}{n^k}.$$
 For $k = 2m$ the series is evaluated by `hasSum_zeta_nat`, and the constant becomes the Bernoulli
@@ -32,7 +32,11 @@ $$P_k(x) = B_k(\{x\}),$$
 where $\{x\}$ is the fractional part (`periodizedBernoulli_coe`).  This gives its value on
 $[m, m + 1)$ for an integer $m$, its value at the integers, its measurability (also for $k = 1$,
 where it has jumps at the integers, from `AddCircle.measurable_liftIco`), and the interval
-integrability of its product with an interval integrable function.
+integrability of its product with an interval integrable function.  The value at an integer, a
+natural number, a numeral, the real number $1$ and the zero of the circle is the Bernoulli number
+$B_k$; these are `simp` lemmas, so that `simp` evaluates `periodizedBernoulli k` at all of them.
+The class of the real number $0$ is first rewritten by `simp` to the zero of the circle, which is
+why that value has its own lemma.
 
 ## Integration by parts
 
@@ -50,6 +54,10 @@ that raises the order in the Euler-Maclaurin formula.
 * `periodizedBernoulli_coe`: $P_k(x) = B_k(\{x\})$.
 * `periodizedBernoulli_coe_of_mem_Ico_intCast`: $P_k(x) = B_k(x - m)$ for $x \in [m, m + 1)$.
 * `periodizedBernoulli_intCast`: $P_k(m) = B_k$ for an integer $m$.
+* `periodizedBernoulli_natCast` and `periodizedBernoulli_ofNat`: the same for a natural number and
+  for a numeral $n \ge 2$.
+* `periodizedBernoulli_apply_one` and `periodizedBernoulli_apply_zero`: the value $B_k$ at the real
+  number $1$ and at the zero of the circle.
 * `measurable_periodizedBernoulli`: measurability of $P_k$ on the circle.
 * `IntervalIntegrable.periodizedBernoulli_smul`: $P_k g$ is interval integrable if $g$ is.
 * `integral_bernoulliFun_comp_sub_right_smul`: integration by parts against $B_n(t - c)$.
@@ -146,6 +154,34 @@ theorem periodizedBernoulli_coe_of_mem_Ico_intCast {k : ℕ} {m : ℤ} {x : ℝ}
 theorem periodizedBernoulli_intCast (k : ℕ) (m : ℤ) :
     periodizedBernoulli k (m : ℝ) = bernoulli k := by
   rw [periodizedBernoulli_coe, Int.fract_intCast, bernoulliFun_eval_zero]
+
+/-- At a natural number, the periodized Bernoulli polynomial is the Bernoulli number. -/
+@[simp]
+theorem periodizedBernoulli_natCast (k n : ℕ) : periodizedBernoulli k (n : ℝ) = bernoulli k := by
+  have h := periodizedBernoulli_intCast k n
+  rwa [Int.cast_natCast] at h
+
+/-- At a numeral `n ≥ 2`, the periodized Bernoulli polynomial is the Bernoulli number. -/
+@[simp]
+theorem periodizedBernoulli_ofNat (k n : ℕ) [n.AtLeastTwo] :
+    periodizedBernoulli k (ofNat(n) : ℝ) = bernoulli k :=
+  periodizedBernoulli_natCast k n
+
+/-- The periodized Bernoulli polynomial of order `k` at the real number `1` is the Bernoulli number
+`B_k`.  Here `one` in the name refers to the argument, not to the order. -/
+@[simp]
+theorem periodizedBernoulli_apply_one (k : ℕ) : periodizedBernoulli k (1 : ℝ) = bernoulli k := by
+  have h := periodizedBernoulli_natCast k 1
+  rwa [Nat.cast_one] at h
+
+/-- The periodized Bernoulli polynomial of order `k` at the zero of the circle is the Bernoulli
+number `B_k`.  Here `zero` in the name refers to the argument, not to the order.  It is the form to
+which `simp` reduces the value at the real number `0`. -/
+@[simp]
+theorem periodizedBernoulli_apply_zero (k : ℕ) : periodizedBernoulli k 0 = bernoulli k := by
+  have h := periodizedBernoulli_natCast k 0
+  rw [Nat.cast_zero] at h
+  exact h
 
 /-- The periodized Bernoulli polynomial is measurable on the circle for every `k`, including
 `k = 1`, where it jumps at the origin. -/

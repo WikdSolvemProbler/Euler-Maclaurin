@@ -27,7 +27,9 @@ integer end points, and for `Finset.Icc` with end points in `ℤ` and in `ℕ`. 
 the `C^p` form, and a companion for a family `F : ℕ → ℝ → E` of successive derivatives, with
 `F (k + 1)` a derivative of `F k` within `[a, b]` for `k < p` and `F p` only interval integrable
 (`..._of_hasDerivWithinAt`). The family form is the weakest hypothesis, and it lets one use closed
-forms for the derivatives.
+forms for the derivatives. The same convention is used for the error bounds below: the statement for
+a `C^p` function has no suffix, and the statement for a family of derivatives has the suffix
+`_of_hasDerivWithinAt`.
 
 For `0 ≤ a`, the same two statements with the sum over `Finset.Ioc ⌊a⌋₊ ⌊b⌋₊` in `ℕ` are
 `EulerMaclaurin.sum_Ioc_natFloor_eq_integral_add` and
@@ -72,16 +74,17 @@ D = 1 / 2                 (p = 1)
 D = |B_{2m}|              (p = 2m)
 ```
 
-Dividing by `p!` gives the error bound for the formula: for any such `D`,
-`‖∑_{a < i ≤ b} F 0 i - ∫_a^b F 0 - (boundary terms of order p)‖ ≤ D / p! * ∫_a^b ‖F p‖`
-(`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le`), and its form for a `C^p`
-function with `F p = iteratedDerivWithin p f (Set.Icc a b)`
-(`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn_of_abs_bernoulliFun_le`). The
-rational constant gives `4 / 6^p * ∫_a^b ‖F p‖`
+Dividing by `p!` gives the error bound for the formula: for any such `D` and a `C^p` function `f`,
+`‖∑_{a < i ≤ b} f i - ∫_a^b f - (boundary terms of order p)‖ ≤ D / p! * ∫_a^b ‖f^{(p)}‖`
+(`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le`), where
+`f^{(p)} = iteratedDerivWithin p f (Set.Icc a b)`, and for a family `F` of derivatives the same
+bound with `F 0` and `F p` in place of `f` and `f^{(p)}`
+(`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le_of_hasDerivWithinAt`). The
+rational constant gives `4 / 6^p * ∫_a^b ‖f^{(p)}‖`
 (`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le` and
-`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_contDiffOn`), and the even order `2m` gives the
-classical `|B_{2m}| / (2m)! * ∫_a^b ‖F (2m)‖`
-(`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_two_mul`).
+`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_hasDerivWithinAt`), and the even order `2m`
+gives the classical `|B_{2m}| / (2m)! * ∫_a^b ‖F (2m)‖` for a family of derivatives
+(`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_two_mul_of_hasDerivWithinAt`).
 
 These rest on the bound `|B_k(x)| ≤ 2 ζ(k) * k! / (2 π)^k` for the Bernoulli polynomials on
 `[0, 1]`, proved from the Fourier expansion in Mathlib and stated with the real series
@@ -91,16 +94,16 @@ These rest on the bound `|B_k(x)| ≤ 2 ζ(k) * k! / (2 π)^k` for the Bernoulli
 
 | Module | Content | Intended Mathlib file |
 | --- | --- | --- |
-| `EulerMaclaurin.MeasurableLiftIco` | `AddCircle.measurable_liftIco`, measurability of the periodization of a measurable function | `Mathlib/MeasureTheory/Integral/IntervalIntegral/Periodic.lean` |
+| `EulerMaclaurin.MeasurableLift` | `AddCircle.measurable_liftIco` and `AddCircle.measurable_liftIoc`, measurability of the periodization of a measurable function on `[a, a + T)` and on `(a, a + T]`, both tagged `@[fun_prop]` | `Mathlib/MeasureTheory/Integral/IntervalIntegral/Periodic.lean` |
 | `EulerMaclaurin.IteratedDeriv` | `ContDiffWithinAt.hasDerivWithinAt_iteratedDerivWithin` and `ContDiffOn.hasDerivWithinAt_iteratedDerivWithin`, the derivative of an iterated derivative within a set, in the pointwise and the set-wise form | `Mathlib/Analysis/Calculus/IteratedDeriv/Defs.lean` |
 | `EulerMaclaurin.BernoulliSum` | `sum_range_bernoulli'_div_factorial_smul`, the regrouping of the coefficients `B'_{k+1} / (k+1)!` into the even Bernoulli numbers | `Mathlib/NumberTheory/Bernoulli.lean` |
-| `EulerMaclaurin.Bernoulli` | bounds for `bernoulliFun k` on `[0, 1]`, the periodic function as `periodizedBernoulli` composed with the quotient map, integration by parts against a Bernoulli polynomial | `Mathlib/NumberTheory/ZetaValues.lean` |
+| `EulerMaclaurin.Bernoulli` | bounds for `bernoulliFun k` on `[0, 1]`, the periodic function as `periodizedBernoulli` composed with the quotient map, its values at integers, natural numbers, numerals, `0` and `1` (all `simp` lemmas), integration by parts against a Bernoulli polynomial | `Mathlib/NumberTheory/ZetaValues.lean` |
 | `EulerMaclaurin.Formula` | the formula, with the remainder as an integral | `Mathlib/NumberTheory/EulerMaclaurin.lean` |
 | `EulerMaclaurin.RemainderBound` | the rational bound for the Bernoulli polynomials, bounds for the remainder integral, and the error bounds | the same file |
 
-Each of `EulerMaclaurin.MeasurableLiftIco`, `EulerMaclaurin.IteratedDeriv` and
+Each of `EulerMaclaurin.MeasurableLift`, `EulerMaclaurin.IteratedDeriv` and
 `EulerMaclaurin.BernoulliSum` imports only the Mathlib file it is meant for.
-`EulerMaclaurin.Bernoulli` uses `EulerMaclaurin.MeasurableLiftIco`, and every Mathlib import of it
+`EulerMaclaurin.Bernoulli` uses `EulerMaclaurin.MeasurableLift`, and every Mathlib import of it
 lies in the import closure of `Mathlib/NumberTheory/ZetaValues.lean`.
 
 The two pointwise bounds `4 k! / 6^k`, `abs_bernoulliFun_le_four_mul_factorial_div_six_pow` and

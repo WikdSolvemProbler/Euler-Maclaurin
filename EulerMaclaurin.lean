@@ -9,7 +9,7 @@ public import EulerMaclaurin.Bernoulli
 public import EulerMaclaurin.BernoulliSum
 public import EulerMaclaurin.Formula
 public import EulerMaclaurin.IteratedDeriv
-public import EulerMaclaurin.MeasurableLiftIco
+public import EulerMaclaurin.MeasurableLift
 public import EulerMaclaurin.RemainderBound
 
 /-!
@@ -24,7 +24,7 @@ This file imports the development of the Euler-Maclaurin formula at every order:
   $B'_{k + 1} / (k + 1)!$ into the even Bernoulli numbers.
 * `EulerMaclaurin.IteratedDeriv`: the derivative of an iterated derivative within a set, for a
   `C^n` function.
-* `EulerMaclaurin.MeasurableLiftIco`: measurability of `AddCircle.liftIco`.
+* `EulerMaclaurin.MeasurableLift`: measurability of `AddCircle.liftIco` and `AddCircle.liftIoc`.
 * `EulerMaclaurin.Formula`: the formula for real end points, with the remainder as an explicit
   integral, and its forms for sums over `ℕ`, for integer end points and for `Finset.Icc`.
 * `EulerMaclaurin.RemainderBound`: bounds for the remainder integral, a rational bound for the
