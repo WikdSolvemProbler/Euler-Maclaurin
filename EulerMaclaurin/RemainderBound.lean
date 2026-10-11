@@ -56,6 +56,12 @@ $D = |B_{2m}|$ gives the classical form
 $\frac{|B_{2m}|}{(2m)!} \int_a^b \|f^{(2m)}\|$.  The rational constant and the even order are stated
 as theorems; the others follow from the general bound.
 
+The statements above are for the sum over `Finset.Ioc ⌊a⌋ ⌊b⌋`.  The remainder term with its
+coefficient is bounded by $\frac{D}{p!} \int_a^b \|g\|$ in
+`EulerMaclaurin.norm_smul_integral_periodizedBernoulli_smul_le`.  It is the remainder term of every
+form of the formula, so it gives the error bound for the `Finset.Icc`, `int` and `nat` forms as
+well: rewrite with the formula and apply it.
+
 ## Main results
 
 * `abs_bernoulliFun_le_four_mul_factorial_div_six_pow`: the rational bound for the Bernoulli
@@ -71,6 +77,8 @@ as theorems; the others follow from the general bound.
   rational bound, for every $p$.
 * `EulerMaclaurin.norm_integral_periodizedBernoulli_two_mul_smul_le`: the sharp bound in even
   order.
+* `EulerMaclaurin.norm_smul_integral_periodizedBernoulli_smul_le`: the bound `D / p ! * ∫ ‖g‖` for
+  the remainder term with its coefficient, which is common to all forms of the formula.
 * `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le`: the error bound for the
   Euler-Maclaurin formula in terms of any uniform bound $D$ for $B_p$ on $[0, 1]$, for a $C^p$
   function.
@@ -194,9 +202,12 @@ theorem norm_integral_periodizedBernoulli_two_mul_smul_le (m : ℕ) (hab : a ≤
   norm_integral_periodizedBernoulli_smul_le hab
     (fun _ hx ↦ abs_bernoulliFun_two_mul_le_abs_bernoulli m hx) hg
 
-/-- The remainder term of the Euler-Maclaurin formula of order `p`, with its coefficient
-`(-1) ^ (p + 1) / p !`, has norm at most `D / p ! * ∫ ‖g‖` if `|B_p(x)| ≤ D` on `[0, 1]`. -/
-private theorem norm_smul_integral_periodizedBernoulli_smul_le {p : ℕ} {D : ℝ} (hab : a ≤ b)
+/-- **Bound for the remainder term of the Euler-Maclaurin formula**, with its coefficient.  The term
+`((-1) ^ (p + 1) / p !) • ∫ t in a..b, periodizedBernoulli p t • g t` is the remainder term of every
+form of the formula in `EulerMaclaurin.Formula`, where `g` is the `p`-th derivative.  If
+`|B_p(x)| ≤ D` for `x ∈ [0, 1]`, its norm is at most `D / p ! * ∫ t in a..b, ‖g t‖`.  Rewriting with
+a form of the formula and applying this bound gives the error bound for that form. -/
+theorem norm_smul_integral_periodizedBernoulli_smul_le {p : ℕ} {D : ℝ} (hab : a ≤ b)
     (hD : ∀ x ∈ Set.Icc (0 : ℝ) 1, |bernoulliFun p x| ≤ D)
     (hg : IntervalIntegrable g volume a b) :
     ‖((-1 : ℝ) ^ (p + 1) / (p ! : ℝ)) • ∫ t in a..b, periodizedBernoulli p t • g t‖ ≤

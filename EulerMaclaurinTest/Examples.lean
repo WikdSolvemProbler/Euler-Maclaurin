@@ -23,6 +23,8 @@ that the conclusions are nondegenerate:
   $B_1(x) = x - \lfloor x \rfloor - 1/2$.
 * The remainder integral of order $1$ of a constant function is a nonzero number.
 * The remainder bounds and the bounds for the Bernoulli polynomials are concrete inequalities.
+* The error bound for the sum over `Finset.Icc` with end points in $\mathbb{N}$ is the formula
+  combined with the bound for the remainder term.
 * The value of the periodized Bernoulli polynomial at an integer, a natural number, a numeral, `0`
   and `1` is found by `simp`, and the measurability of the periodization of a measurable function is
   found by `fun_prop`.
@@ -192,6 +194,27 @@ at most `|B_2| = 1 / 6`. -/
 example : ‖∫ t in (0 : ℝ)..1, periodizedBernoulli (2 * 1) t • (1 : ℂ)‖ ≤ 1 / 6 :=
   (norm_integral_periodizedBernoulli_two_mul_smul_le 1 zero_le_one
     intervalIntegrable_const).trans_eq (by norm_num [bernoulli_two])
+
+/-- **The error bound over `Finset.Icc` for end points in `ℕ`**, with the rational constant.  The
+formula `EulerMaclaurin.sum_Icc_nat_eq_integral_add_of_hasDerivWithinAt` and the bound for the
+remainder term `EulerMaclaurin.norm_smul_integral_periodizedBernoulli_smul_le` give that the
+difference between the sum and the integral plus the boundary terms of order `p` is at most
+`4 / 6 ^ p * ∫ ‖F p‖`, as for the sum over `Finset.Ioc`. -/
+example {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E] {p : ℕ}
+    (hp : p ≠ 0) {F : ℕ → ℝ → E} {a b : ℕ} (hab : a ≤ b)
+    (hF : ∀ k < p, ∀ x ∈ Set.Icc (a : ℝ) b,
+      HasDerivWithinAt (F k) (F (k + 1) x) (Set.Icc (a : ℝ) b) x)
+    (hFp : IntervalIntegrable (F p) volume (a : ℝ) b) :
+    ‖∑ i ∈ Finset.Icc a b, F 0 (i : ℝ) - (∫ t in (a : ℝ)..b, F 0 t) -
+        (1 / 2 : ℝ) • (F 0 a + F 0 b) -
+        ∑ j ∈ Finset.range (p / 2), ((bernoulli (2 * j + 2) : ℝ) / ((2 * j + 2)! : ℝ)) •
+          (F (2 * j + 1) b - F (2 * j + 1) a)‖ ≤
+      4 / 6 ^ p * ∫ t in (a : ℝ)..b, ‖F p t‖ := by
+  rw [sum_Icc_nat_eq_integral_add_of_hasDerivWithinAt hp hab hF hFp]
+  refine (le_of_eq (by congr 1; abel)).trans
+    ((norm_smul_integral_periodizedBernoulli_smul_le (by exact_mod_cast hab)
+      (fun _ hx ↦ abs_bernoulliFun_le_four_mul_factorial_div_six_pow p hx) hFp).trans_eq ?_)
+  field_simp
 
 /-- The bound for the Bernoulli polynomials at `k = 2` and `x = 1 / 2`: `|B_2(1 / 2)| = 1 / 12`
 is below `4 * 2! / 6 ^ 2 = 2 / 9`. -/

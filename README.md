@@ -85,6 +85,12 @@ rational constant gives `4 / 6^p * ∫_a^b ‖f^{(p)}‖`
 `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_hasDerivWithinAt`), and the even order `2m`
 gives the classical `|B_{2m}| / (2m)! * ∫_a^b ‖F (2m)‖` for a family of derivatives
 (`EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_two_mul_of_hasDerivWithinAt`).
+These statements are for the sum over `Finset.Ioc ⌊a⌋ ⌊b⌋`. The remainder term with its coefficient
+is bounded directly: `‖(-1)^(p+1) / p! • ∫_a^b P_p • g‖ ≤ D / p! * ∫_a^b ‖g‖` whenever
+`|B_p(x)| ≤ D` for `x ∈ [0, 1]` (`EulerMaclaurin.norm_smul_integral_periodizedBernoulli_smul_le`).
+It is the remainder term of every form of the formula, so it gives the error bound for the
+`Finset.Icc`, `int` and `nat` forms as well: rewrite with the formula and apply it, as in the
+example for `Finset.Icc` with end points in `ℕ` in `EulerMaclaurinTest/Examples.lean`.
 
 These rest on the bound `|B_k(x)| ≤ 2 ζ(k) * k! / (2 π)^k` for the Bernoulli polynomials on
 `[0, 1]`, proved from the Fourier expansion in Mathlib and stated with the real series

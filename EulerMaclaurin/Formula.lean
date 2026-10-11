@@ -41,7 +41,8 @@ The error of the formula, that is, the remainder term with its coefficient, is b
 `EulerMaclaurin.RemainderBound`: by
 `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le_of_abs_bernoulliFun_le` in terms of any uniform
 bound for $B_p$ on $[0, 1]$, and by `EulerMaclaurin.norm_sum_Ioc_sub_integral_sub_le` with the
-constant $4 / 6^p$.
+constant $4 / 6^p$.  For the other forms of the formula the remainder term is bounded by
+`EulerMaclaurin.norm_smul_integral_periodizedBernoulli_smul_le`.
 
 ## Main results
 
