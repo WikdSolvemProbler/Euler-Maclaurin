@@ -141,6 +141,9 @@ builds both libraries. Warnings are errors, and Mathlib's standard linters are e
   `Finset.Ioc ⌊a⌋₊ ⌊b⌋₊`.
 * `Mathlib/NumberTheory/AbelSummation.lean` has the first order Abel summation formula with real
   end points.
+* Manuel Eberl's entry *The Euler-MacLaurin Formula* in the Isabelle Archive of Formal Proofs
+  (2017) proves the formula for functions from the reals to a Banach space, in the textbook form
+  and in the variant of *Concrete Mathematics*, <https://isa-afp.org/entries/Euler_MacLaurin.html>.
 
 ## References
 
