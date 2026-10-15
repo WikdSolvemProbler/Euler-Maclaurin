@@ -1,5 +1,14 @@
 # Euler-Maclaurin
 
+> **Archived.** The core of this development is part of Geoffrey Irving's
+> [`interval`](https://github.com/girving/interval) library since 13OCT2026
+> ([girving/interval#34](https://github.com/girving/interval/pull/34), commit `2c89204`), in the
+> modules `Interval/EulerMaclaurin/PeriodizedBernoulli.lean`, `Formula.lean` and
+> `RemainderBound.lean`. This repository is kept read-only for reference. It also contains forms of
+> the formula and bounds that are not part of `interval`: the sums over `ℕ` with real end points,
+> the `Finset.Icc` forms, the regrouping into even Bernoulli numbers, and further bounds for the
+> remainder integral.
+
 The Euler-Maclaurin summation formula at every order, in Lean 4 with Mathlib, written to Mathlib's
 standards with a view to contributing it upstream. The development is checked against Lean `v4.34.1`
 and Mathlib `v4.34.1`.
